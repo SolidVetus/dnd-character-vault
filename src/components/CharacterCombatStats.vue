@@ -139,176 +139,320 @@ function setDeathSaveFailures(value: number) {
 </script>
 
 <template>
-  <v-card class="pa-4 mt-4">
-    <v-card-title>Боевые характеристики</v-card-title>
+  <section class="combat-section">
+    <h2 class="section-header">Боевые характеристики</h2>
 
-    <v-card-text>
-      <v-row>
-        <v-col cols="12" sm="4">
-          <v-text-field
-            v-model.number="form.armorClass"
-            label="КД"
-            type="number"
-            min="0"
-            max="50"
-          />
-        </v-col>
+    <v-card class="combat-card" variant="outlined">
+      <v-card-text class="combat-card__content">
+        <v-row>
+          <v-col cols="12" sm="4">
+            <v-text-field
+              v-model.number="form.armorClass"
+              label="КД"
+              type="number"
+              min="0"
+              max="50"
+              density="comfortable"
+              @keyup.enter="saveCombat"
+            />
+          </v-col>
 
-        <v-col cols="12" sm="4">
-          <v-text-field
-            v-model.number="form.initiative"
-            label="Инициатива"
-            type="number"
-            min="-50"
-            max="50"
-          />
-        </v-col>
+          <v-col cols="12" sm="4">
+            <v-text-field
+              v-model.number="form.initiative"
+              label="Инициатива"
+              type="number"
+              min="-50"
+              max="50"
+              density="comfortable"
+              @keyup.enter="saveCombat"
+            />
+          </v-col>
 
-        <v-col cols="12" sm="4">
-          <v-text-field
-            v-model.number="form.speed"
-            label="Скорость"
-            type="number"
-            min="0"
-            max="200"
-          />
-        </v-col>
-      </v-row>
+          <v-col cols="12" sm="4">
+            <v-text-field
+              v-model.number="form.speed"
+              label="Скорость"
+              type="number"
+              min="0"
+              max="200"
+              density="comfortable"
+              @keyup.enter="saveCombat"
+            />
+          </v-col>
+        </v-row>
 
-      <v-btn color="primary" :loading="savingCombat" :disabled="savingCombat" @click="saveCombat">
-        Сохранить характеристики
-      </v-btn>
-    </v-card-text>
+        <v-btn
+          class="combat-card__save-button"
+          :loading="savingCombat"
+          :disabled="savingCombat"
+          @click="saveCombat"
+        >
+          Сохранить характеристики
+        </v-btn>
+      </v-card-text>
+    </v-card>
 
-    <v-divider class="my-4" />
+    <h2 class="section-header">Хиты</h2>
 
-    <v-card-title>Хиты</v-card-title>
+    <v-card class="combat-card" variant="outlined">
+      <v-card-text class="combat-card__content">
+        <v-row>
+          <v-col cols="12" sm="4">
+            <v-text-field
+              v-model.number="form.hp.max"
+              label="Максимум хитов"
+              type="number"
+              min="0"
+              max="9999"
+              density="comfortable"
+              @keyup.enter="saveHp"
+            />
+          </v-col>
 
-    <v-card-text>
-      <v-row>
-        <v-col cols="12" sm="4">
-          <v-text-field
-            v-model.number="form.hp.max"
-            label="Максимум хитов"
-            type="number"
-            min="0"
-            max="9999"
-          />
-        </v-col>
+          <v-col cols="12" sm="4">
+            <v-text-field
+              v-model.number="form.hp.current"
+              label="Текущие хиты"
+              type="number"
+              min="0"
+              max="9999"
+              density="comfortable"
+              @keyup.enter="saveHp"
+            />
+          </v-col>
 
-        <v-col cols="12" sm="4">
-          <v-text-field
-            v-model.number="form.hp.current"
-            label="Текущие хиты"
-            type="number"
-            min="0"
-            max="9999"
-          />
-        </v-col>
+          <v-col cols="12" sm="4">
+            <v-text-field
+              v-model.number="form.hp.temp"
+              label="Временные хиты"
+              type="number"
+              min="0"
+              max="9999"
+              density="comfortable"
+              @keyup.enter="saveHp"
+            />
+          </v-col>
 
-        <v-col cols="12" sm="4">
-          <v-text-field
-            v-model.number="form.hp.temp"
-            label="Временные хиты"
-            type="number"
-            min="0"
-            max="9999"
-          />
-        </v-col>
-        <v-col cols="12" sm="4">
-          <v-text-field v-model="form.hitDice" label="Кость хитов" placeholder="1d8" />
-        </v-col>
-      </v-row>
+          <v-col cols="12" sm="4">
+            <v-text-field
+              v-model="form.hitDice"
+              label="Кость хитов"
+              placeholder="1d8"
+              density="comfortable"
+              @keyup.enter="saveCombat"
+            />
+          </v-col>
+        </v-row>
 
-      <v-btn color="primary" :loading="savingHp" :disabled="savingHp" @click="saveHp">
-        Сохранить хиты
-      </v-btn>
-    </v-card-text>
+        <v-btn
+          class="combat-card__save-button"
+          :loading="savingHp"
+          :disabled="savingHp"
+          @click="saveHp"
+        >
+          Сохранить хиты
+        </v-btn>
+      </v-card-text>
+    </v-card>
 
-    <v-divider class="my-4" />
+    <h2 class="section-header">Спасброски от смерти</h2>
 
-    <v-card-title>Спасброски от смерти</v-card-title>
+    <v-card class="combat-card" variant="outlined">
+      <v-card-text class="combat-card__content">
+        <div class="death-saves">
+          <div class="death-saves__row">
+            <span class="death-saves__label">Успехи</span>
 
-    <v-card-text>
-      <div class="death-saves">
-        <div class="death-saves__row">
-          <span class="death-saves__label">Успехи</span>
-
-          <div class="death-saves__circles" role="group" aria-label="Успешные спасброски от смерти">
-            <v-btn
-              v-for="value in [1, 2, 3]"
-              :key="`success-${value}`"
-              :aria-label="`Успех ${value}`"
-              :aria-pressed="form.deathSaves.successes >= value"
-              :color="form.deathSaves.successes >= value ? 'success' : undefined"
-              :variant="form.deathSaves.successes >= value ? 'flat' : 'outlined'"
-              icon
-              size="small"
-              class="death-saves__circle"
-              :disabled="savingDeathSaves"
-              @click="setDeathSaveSuccesses(value)"
+            <div
+              class="death-saves__circles"
+              role="group"
+              aria-label="Успешные спасброски от смерти"
             >
-              <span class="death-saves__dot" />
-            </v-btn>
+              <v-btn
+                v-for="value in [1, 2, 3]"
+                :key="`success-${value}`"
+                :aria-label="`Успех ${value}`"
+                :aria-pressed="form.deathSaves.successes >= value"
+                :color="form.deathSaves.successes >= value ? 'success' : undefined"
+                :variant="form.deathSaves.successes >= value ? 'flat' : 'outlined'"
+                icon
+                size="small"
+                class="death-saves__circle"
+                :disabled="savingDeathSaves"
+                @click="setDeathSaveSuccesses(value)"
+              >
+                <span class="death-saves__dot" />
+              </v-btn>
+            </div>
+          </div>
+
+          <div class="death-saves__row">
+            <span class="death-saves__label">Неудачи</span>
+
+            <div
+              class="death-saves__circles"
+              role="group"
+              aria-label="Неудачные спасброски от смерти"
+            >
+              <v-btn
+                v-for="value in [1, 2, 3]"
+                :key="`failure-${value}`"
+                :aria-label="`Неудача ${value}`"
+                :aria-pressed="form.deathSaves.failures >= value"
+                :color="form.deathSaves.failures >= value ? 'error' : undefined"
+                :variant="form.deathSaves.failures >= value ? 'flat' : 'outlined'"
+                icon
+                size="small"
+                class="death-saves__circle"
+                :disabled="savingDeathSaves"
+                @click="setDeathSaveFailures(value)"
+              >
+                <span class="death-saves__dot" />
+              </v-btn>
+            </div>
           </div>
         </div>
 
-        <div class="death-saves__row">
-          <span class="death-saves__label">Неудачи</span>
-
-          <div
-            class="death-saves__circles"
-            role="group"
-            aria-label="Неудачные спасброски от смерти"
-          >
-            <v-btn
-              v-for="value in [1, 2, 3]"
-              :key="`failure-${value}`"
-              :aria-label="`Неудача ${value}`"
-              :aria-pressed="form.deathSaves.failures >= value"
-              :color="form.deathSaves.failures >= value ? 'error' : undefined"
-              :variant="form.deathSaves.failures >= value ? 'flat' : 'outlined'"
-              icon
-              size="small"
-              class="death-saves__circle"
-              :disabled="savingDeathSaves"
-              @click="setDeathSaveFailures(value)"
-            >
-              <span class="death-saves__dot" />
-            </v-btn>
-          </div>
-        </div>
-      </div>
-
-      <v-btn
-        class="mt-4"
-        color="primary"
-        :loading="savingDeathSaves"
-        :disabled="savingDeathSaves"
-        @click="saveDeathSaves"
-      >
-        Сохранить спасброски
-      </v-btn>
-    </v-card-text>
-  </v-card>
+        <v-btn
+          class="combat-card__save-button mt-4"
+          :loading="savingDeathSaves"
+          :disabled="savingDeathSaves"
+          @click="saveDeathSaves"
+        >
+          Сохранить спасброски
+        </v-btn>
+      </v-card-text>
+    </v-card>
+  </section>
 </template>
 
 <style scoped>
+.section-header {
+  display: block;
+  margin-top: 0;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent-color);
+  background: transparent !important;
+  color: var(--heading-color);
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
+}
+
+.combat-card {
+  margin-bottom: 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--page-surface) !important;
+  color: var(--text-color);
+}
+
+.combat-card :deep(.v-card-text) {
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+}
+
+.combat-card__content {
+  color: var(--text-color);
+}
+
+.combat-card :deep(.v-divider) {
+  border-color: var(--border-color);
+  opacity: 1;
+}
+
+.combat-card :deep(.v-field) {
+  border-radius: 8px;
+  background: var(--page-surface);
+  color: var(--text-color);
+}
+
+.combat-card :deep(.v-field__outline) {
+  color: var(--border-color);
+}
+
+.combat-card :deep(.v-field--focused .v-field__outline) {
+  color: var(--accent-color);
+}
+
+.combat-card :deep(.v-field__input),
+.combat-card :deep(input),
+.combat-card :deep(textarea) {
+  color: var(--text-color);
+  opacity: 1;
+}
+
+.combat-card :deep(.v-label) {
+  color: var(--text-muted);
+  opacity: 1;
+}
+
+.combat-card :deep(.v-field--disabled) {
+  background: var(--page-background);
+  opacity: 0.7;
+}
+
+.combat-card__save-button {
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--button-border);
+  border-radius: 8px;
+  background: var(--button-background);
+  color: var(--button-text);
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.017857em;
+  line-height: 1.25rem;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.combat-card__save-button:hover:not(:disabled) {
+  border-color: var(--button-hover-border);
+  background: var(--button-hover-background);
+}
+
+.combat-card__save-button:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+.combat-card__save-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.combat-card__save-button :deep(.v-btn__content) {
+  color: var(--button-text);
+}
+
 .death-saves {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--page-background);
+  color: var(--text-color);
 }
 
 .death-saves__row {
   display: flex;
   align-items: center;
   gap: 24px;
+  padding-left: 8px;
 }
 
 .death-saves__label {
   width: 100px;
-  font-weight: 500;
+  color: var(--text-muted);
+  font-weight: 600;
 }
 
 .death-saves__circles {
@@ -318,6 +462,25 @@ function setDeathSaveFailures(value: number) {
 
 .death-saves__circle {
   flex-shrink: 0;
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.death-saves__circle:hover:not(:disabled) {
+  border-color: var(--card-hover-border);
+}
+
+.death-saves__circle:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+.death-saves__circle :deep(.v-btn__overlay) {
+  opacity: 0;
 }
 
 .death-saves__dot {
@@ -328,6 +491,10 @@ function setDeathSaveFailures(value: number) {
 }
 
 @media (max-width: 400px) {
+  .death-saves {
+    padding: 12px;
+  }
+
   .death-saves__row {
     gap: 12px;
   }

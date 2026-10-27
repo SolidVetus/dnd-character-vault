@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, ref, watch } from 'vue'
+import { reactive, watch } from 'vue'
 import { updatePersonality, type Character } from '../api/characters'
 
 interface Props {
@@ -15,359 +15,288 @@ const emit = defineEmits<{
   error: [message: string]
 }>()
 
-const isEditing = ref(false)
-const isSaving = ref(false)
+type PersonalityField = 'traits' | 'ideals' | 'bonds' | 'flaws'
 
-const form = reactive({
+const text = reactive<Record<PersonalityField, string>>({
   traits: '',
-  ideals: [] as string[],
-  bonds: [] as string[],
-  flaws: [] as string[],
+  ideals: '',
+  bonds: '',
+  flaws: '',
 })
 
-function syncForm() {
-  form.traits = props.personality.traits ?? ''
-  form.ideals = [...(props.personality.ideals ?? [])]
-  form.bonds = [...(props.personality.bonds ?? [])]
-  form.flaws = [...(props.personality.flaws ?? [])]
+const saving = reactive<Record<PersonalityField, boolean>>({
+  traits: false,
+  ideals: false,
+  bonds: false,
+  flaws: false,
+})
+
+const sections: {
+  field: PersonalityField
+  title: string
+  label: string
+  hint: string
+}[] = [
+  {
+    field: 'traits',
+    title: 'Черты характера',
+    label: 'Черты характера',
+    hint: 'Опиши черты характера.',
+  },
+  {
+    field: 'ideals',
+    title: 'Идеалы',
+    label: 'Идеалы',
+    hint: 'Каждый идеал указывай с новой строки.',
+  },
+  {
+    field: 'bonds',
+    title: 'Привязанности',
+    label: 'Привязанности',
+    hint: 'Каждую привязанность указывай с новой строки.',
+  },
+  {
+    field: 'flaws',
+    title: 'Слабости',
+    label: 'Слабости',
+    hint: 'Каждую слабость указывай с новой строки.',
+  },
+]
+
+function syncText() {
+  text.traits = props.personality.traits ?? ''
+  text.ideals = (props.personality.ideals ?? []).join('\n')
+  text.bonds = (props.personality.bonds ?? []).join('\n')
+  text.flaws = (props.personality.flaws ?? []).join('\n')
 }
 
-watch(() => props.personality, syncForm, {
+watch(() => props.personality, syncText, {
   immediate: true,
   deep: true,
 })
 
-function addEntry(field: 'ideals' | 'bonds' | 'flaws') {
-  form[field].push('')
-}
-
-function removeEntry(field: 'ideals' | 'bonds' | 'flaws', index: number) {
-  form[field].splice(index, 1)
-}
-
-function cancelEditing() {
-  syncForm()
-  isEditing.value = false
-}
-
-async function savePersonality() {
-  if (isSaving.value) return
-
-  isSaving.value = true
-
-  const payload = {
-    traits: form.traits.trim(),
-    ideals: form.ideals.map((item) => item.trim()).filter(Boolean),
-    bonds: form.bonds.map((item) => item.trim()).filter(Boolean),
-    flaws: form.flaws.map((item) => item.trim()).filter(Boolean),
+function getPayload(field: PersonalityField) {
+  if (field === 'traits') {
+    return {
+      traits: text.traits.trim(),
+    }
   }
 
-  try {
-    const personality = await updatePersonality(props.characterId, payload)
+  const values = text[field]
+    .split('\n')
+    .map((item) => item.trim())
+    .filter(Boolean)
 
+  return {
+    [field]: values,
+  }
+}
+
+function syncSavedField(field: PersonalityField, personality: Character['personality']) {
+  if (field === 'traits') {
+    text.traits = personality.traits ?? ''
+    return
+  }
+
+  text[field] = (personality[field] ?? []).join('\n')
+}
+
+async function saveField(field: PersonalityField) {
+  if (saving[field]) return
+
+  saving[field] = true
+
+  try {
+    const personality = await updatePersonality(props.characterId, getPayload(field))
+
+    syncSavedField(field, personality)
     emit('updated', personality)
-    isEditing.value = false
-    emit('saved', 'Личность сохранена.')
-  } catch {
-    emit('error', 'Не удалось сохранить личность.')
+
+    const section = sections.find((item) => item.field === field)
+    emit('saved', `${section?.title} сохранены.`)
+  } catch (err) {
+    const section = sections.find((item) => item.field === field)
+    const title = section?.title ?? 'Данные'
+
+    emit(
+      'error',
+      err instanceof Error ? err.message : `Не удалось сохранить: ${title.toLowerCase()}.`,
+    )
   } finally {
-    isSaving.value = false
+    saving[field] = false
   }
 }
 </script>
 
 <template>
   <div class="personality-stack">
-    <!-- Черты характера -->
-    <v-card class="personality-block mb-4" variant="outlined">
-      <v-card-title class="personality-block__header">
-        <span>Черты характера</span>
+    <section v-for="section in sections" :key="section.field" class="personality-section">
+      <h2 class="personality-section__title">
+        {{ section.title }}
+      </h2>
 
-        <v-btn
-          v-if="!isEditing"
-          icon="mdi-pencil"
-          size="small"
-          variant="text"
-          aria-label="Редактировать черты характера"
-          @click="isEditing = true"
-        />
-      </v-card-title>
-
-      <v-divider />
-
-      <v-card-text>
+      <v-card variant="outlined" class="personality-block">
         <v-textarea
-          v-if="isEditing"
-          v-model="form.traits"
-          label="Черты характера"
-          rows="3"
+          v-model="text[section.field]"
+          :aria-label="section.label"
+          :hint="section.hint"
+          persistent-hint
+          rows="1"
           auto-grow
-          maxlength="5000"
-          hide-details="auto"
+          variant="outlined"
+          :maxlength="section.field === 'traits' ? 5000 : 1000"
+          class="personality-block__textarea"
         />
 
-        <p v-else class="personality-block__text">
-          {{ personality.traits || 'Не указаны' }}
-        </p>
-      </v-card-text>
-    </v-card>
-
-    <!-- Идеалы -->
-    <v-card class="personality-block mb-4" variant="outlined">
-      <v-card-title class="personality-block__header">
-        <span>Идеалы</span>
-
-        <div class="personality-block__title-actions">
-          <template v-if="isEditing">
-            <v-btn
-              icon="mdi-plus"
-              size="small"
-              variant="text"
-              aria-label="Добавить идеал"
-              @click="addEntry('ideals')"
-            />
-          </template>
+        <v-card-actions class="personality-block__actions">
+          <v-spacer />
 
           <v-btn
-            v-else
-            icon="mdi-pencil"
-            size="small"
-            variant="text"
-            aria-label="Редактировать идеалы"
-            @click="isEditing = true"
-          />
-        </div>
-      </v-card-title>
-
-      <v-divider />
-
-      <v-card-text>
-        <div v-if="isEditing" class="personality-block__entries">
-          <p v-if="!form.ideals.length" class="personality-block__empty">Пока нет записей</p>
-
-          <div
-            v-for="(entry, index) in form.ideals"
-            :key="`ideal-${index}`"
-            class="personality-block__entry"
+            class="personality-block__save-button"
+            variant="flat"
+            :loading="saving[section.field]"
+            :disabled="saving[section.field]"
+            @click="saveField(section.field)"
           >
-            <v-text-field
-              v-model="form.ideals[index]"
-              label="Идеал"
-              maxlength="1000"
-              hide-details="auto"
-            />
-
-            <v-btn
-              icon="mdi-close"
-              size="small"
-              variant="text"
-              aria-label="Удалить идеал"
-              @click="removeEntry('ideals', index)"
-            />
-          </div>
-        </div>
-
-        <ul v-else-if="personality.ideals?.length" class="personality-block__list">
-          <li v-for="(entry, index) in personality.ideals" :key="`ideal-${index}`">
-            {{ entry }}
-          </li>
-        </ul>
-
-        <p v-else class="personality-block__empty">Не указаны</p>
-      </v-card-text>
-    </v-card>
-
-    <!-- Привязанности -->
-    <v-card class="personality-block mb-4" variant="outlined">
-      <v-card-title class="personality-block__header">
-        <span>Привязанности</span>
-
-        <div class="personality-block__title-actions">
-          <template v-if="isEditing">
-            <v-btn
-              icon="mdi-plus"
-              size="small"
-              variant="text"
-              aria-label="Добавить привязанность"
-              @click="addEntry('bonds')"
-            />
-          </template>
-
-          <v-btn
-            v-else
-            icon="mdi-pencil"
-            size="small"
-            variant="text"
-            aria-label="Редактировать привязанности"
-            @click="isEditing = true"
-          />
-        </div>
-      </v-card-title>
-
-      <v-divider />
-
-      <v-card-text>
-        <div v-if="isEditing" class="personality-block__entries">
-          <p v-if="!form.bonds.length" class="personality-block__empty">Пока нет записей</p>
-
-          <div
-            v-for="(entry, index) in form.bonds"
-            :key="`bond-${index}`"
-            class="personality-block__entry"
-          >
-            <v-text-field
-              v-model="form.bonds[index]"
-              label="Привязанность"
-              maxlength="1000"
-              hide-details="auto"
-            />
-
-            <v-btn
-              icon="mdi-close"
-              size="small"
-              variant="text"
-              aria-label="Удалить привязанность"
-              @click="removeEntry('bonds', index)"
-            />
-          </div>
-        </div>
-
-        <ul v-else-if="personality.bonds?.length" class="personality-block__list">
-          <li v-for="(entry, index) in personality.bonds" :key="`bond-${index}`">
-            {{ entry }}
-          </li>
-        </ul>
-
-        <p v-else class="personality-block__empty">Не указаны</p>
-      </v-card-text>
-    </v-card>
-
-    <!-- Слабости -->
-    <v-card class="personality-block mb-4" variant="outlined">
-      <v-card-title class="personality-block__header">
-        <span>Слабости</span>
-
-        <div class="personality-block__title-actions">
-          <template v-if="isEditing">
-            <v-btn
-              icon="mdi-plus"
-              size="small"
-              variant="text"
-              aria-label="Добавить слабость"
-              @click="addEntry('flaws')"
-            />
-          </template>
-
-          <v-btn
-            v-else
-            icon="mdi-pencil"
-            size="small"
-            variant="text"
-            aria-label="Редактировать слабости"
-            @click="isEditing = true"
-          />
-        </div>
-      </v-card-title>
-
-      <v-divider />
-
-      <v-card-text>
-        <div v-if="isEditing" class="personality-block__entries">
-          <p v-if="!form.flaws.length" class="personality-block__empty">Пока нет записей</p>
-
-          <div
-            v-for="(entry, index) in form.flaws"
-            :key="`flaw-${index}`"
-            class="personality-block__entry"
-          >
-            <v-text-field
-              v-model="form.flaws[index]"
-              label="Слабость"
-              maxlength="1000"
-              hide-details="auto"
-            />
-
-            <v-btn
-              icon="mdi-close"
-              size="small"
-              variant="text"
-              aria-label="Удалить слабость"
-              @click="removeEntry('flaws', index)"
-            />
-          </div>
-        </div>
-
-        <ul v-else-if="personality.flaws?.length" class="personality-block__list">
-          <li v-for="(entry, index) in personality.flaws" :key="`flaw-${index}`">
-            {{ entry }}
-          </li>
-        </ul>
-
-        <p v-else class="personality-block__empty">Не указаны</p>
-      </v-card-text>
-    </v-card>
-
-    <!-- Кнопки редактирования -->
-    <div v-if="isEditing" class="personality-stack__actions">
-      <v-btn variant="text" :disabled="isSaving" @click="cancelEditing"> Отмена </v-btn>
-
-      <v-btn color="primary" :loading="isSaving" @click="savePersonality"> Сохранить </v-btn>
-    </div>
+            Сохранить
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </section>
   </div>
 </template>
 
 <style scoped>
-.personality-block__header,
-.personality-block__entry,
-.personality-stack__actions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.personality-block__title-actions {
-  display: flex;
-  align-items: center;
-}
-
-.personality-block__text {
-  margin: 0;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-
-.personality-block__list {
-  margin: 0;
-  padding-left: 18px;
-}
-
-.personality-block__list li + li {
-  margin-top: 6px;
-}
-
-.personality-block__empty {
-  margin: 0;
-  color: rgba(var(--v-theme-on-surface), 0.6);
-  font-size: 0.9rem;
-}
-
-.personality-block__entries {
+.personality-stack {
   display: grid;
-  gap: 8px;
+  gap: 24px;
+  color: var(--text-color);
 }
 
-.personality-block__entry {
-  gap: 4px;
-}
-
-.personality-block__entry :deep(.v-input) {
-  flex: 1;
-  min-width: 0;
-}
-
-.personality-stack__actions {
-  justify-content: flex-end;
-  gap: 8px;
+.personality-section__title {
+  display: block;
   margin: 0 0 16px;
+  padding: 0 0 10px;
+  border-bottom: 2px solid var(--accent-color);
+  color: var(--heading-color);
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
+}
+
+.personality-block {
+  position: relative;
+  overflow: hidden;
+  padding: 16px;
+  border-color: var(--border-color);
+  border-radius: 10px;
+  background: var(--page-surface);
+  color: var(--text-color);
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.personality-block:hover {
+  border-color: var(--card-hover-border);
+}
+
+.personality-block__textarea :deep(.v-field) {
+  border-radius: 8px;
+  background: var(--page-background);
+  color: var(--text-color);
+}
+
+.personality-block__textarea :deep(.v-field__outline) {
+  color: var(--border-color);
+}
+
+.personality-block__textarea :deep(.v-label),
+.personality-block__textarea :deep(.v-field__input),
+.personality-block__textarea :deep(.v-messages) {
+  color: var(--text-color);
+  opacity: 1;
+}
+
+.personality-block__textarea :deep(.v-field__input textarea) {
+  color: var(--text-color);
+  caret-color: var(--accent-color);
+}
+
+.personality-block__textarea :deep(.v-field__input textarea::placeholder) {
+  color: var(--text-muted);
+  opacity: 1;
+}
+
+.personality-block__textarea :deep(.v-field--focused .v-field__outline) {
+  color: var(--accent-color);
+}
+
+.personality-block__textarea :deep(.v-field--focused) {
+  color: var(--accent-color);
+}
+
+.personality-block__textarea :deep(textarea) {
+  resize: vertical;
+  overflow-y: auto;
+}
+
+.personality-block__textarea :deep(.v-field__input) {
+  min-height: 56px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.personality-block__textarea :deep(.v-field--disabled) {
+  opacity: 0.6;
+}
+
+.personality-block__actions {
+  padding: 8px 0 0;
+}
+
+.personality-block__save-button {
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--button-border);
+  border-radius: 8px;
+  background: var(--button-background);
+  color: var(--button-text);
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.017857em;
+  line-height: 1.25rem;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.personality-block__save-button:hover:not(:disabled) {
+  border-color: var(--button-hover-border);
+  background: var(--button-hover-background);
+}
+
+.personality-block__save-button:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 3px;
+}
+
+.personality-block__save-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+@media (max-width: 600px) {
+  .personality-stack {
+    gap: 20px;
+  }
+
+  .personality-block {
+    padding: 14px;
+  }
 }
 </style>

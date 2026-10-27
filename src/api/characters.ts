@@ -1,4 +1,5 @@
 const API_URL = 'http://127.0.0.1:3000/api'
+export const API_BASE_URL = API_URL.replace('/api', '')
 
 export interface CharacterPreview {
   id: string
@@ -279,6 +280,57 @@ export async function updateCharacterIdentity(
   }
 
   return response.json() as Promise<Character['identity']>
+}
+
+export async function uploadCharacterAvatar(
+  id: string,
+  file: File,
+): Promise<{ avatarUrl: string }> {
+  const formData = new FormData()
+  formData.append('avatar', file)
+
+  const response = await fetch(`${API_URL}/characters/${id}/avatar`, {
+    method: 'PUT',
+    body: formData,
+  })
+
+  if (!response.ok) {
+    let message = 'Не удалось загрузить аватар.'
+
+    if (response.status === 413) {
+      message = 'Изображение слишком большое. Максимальный размер — 5 МиБ.'
+    } else {
+      try {
+        const error = (await response.json()) as { message?: string }
+        if (error.message) message = error.message
+      } catch (err) {
+        console.error(err)
+      }
+    }
+
+    throw new Error(message)
+  }
+
+  return response.json() as Promise<{ avatarUrl: string }>
+}
+
+export async function deleteCharacterAvatar(id: string): Promise<void> {
+  const response = await fetch(`${API_URL}/characters/${id}/avatar`, {
+    method: 'DELETE',
+  })
+
+  if (!response.ok) {
+    let message = 'Не удалось удалить аватар.'
+
+    try {
+      const error = (await response.json()) as { message?: string }
+      if (error.message) message = error.message
+    } catch (err) {
+      console.error(err)
+    }
+
+    throw new Error(message)
+  }
 }
 
 export async function updateProficiencyBonus(

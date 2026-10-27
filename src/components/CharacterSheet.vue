@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, reactive } from 'vue'
+import { onMounted, ref } from 'vue'
 import {
   getCharacter,
   type AbilityId,
@@ -33,32 +33,12 @@ const emit = defineEmits<{
 const character = ref<Character | null>(null)
 const loading = ref(true)
 const error = ref('')
-const identityForm = reactive({
-  characterName: '',
-  playerName: '',
-  classLevel: '',
-  race: '',
-  background: '',
-  alignment: '',
-  experiencePoints: 0,
-  age: null as number | null,
-})
 
 const saveMessage = ref('')
 
 onMounted(async () => {
   try {
     character.value = await getCharacter(props.characterId)
-    Object.assign(identityForm, {
-      characterName: character.value.identity.characterName,
-      playerName: character.value.identity.playerName,
-      classLevel: character.value.identity.classLevel,
-      race: character.value.identity.race,
-      background: character.value.identity.background,
-      alignment: character.value.identity.alignment,
-      experiencePoints: character.value.identity.experiencePoints,
-      age: character.value.identity.age,
-    })
   } catch {
     error.value = 'Не удалось загрузить персонажа. Проверь, запущен ли API.'
   } finally {
@@ -147,10 +127,8 @@ function handleError(message: string) {
 </script>
 
 <template>
-  <v-container>
-    <v-btn variant="outlined" class="mb-4" @click="emit('back')"> Назад к персонажам </v-btn>
-
-    <div v-if="loading">
+  <v-container class="character-sheet">
+    <div v-if="loading" class="character-sheet__status">
       <v-progress-circular indeterminate />
       <p>Загружаем персонажа...</p>
     </div>
@@ -160,94 +138,249 @@ function handleError(message: string) {
     </v-alert>
 
     <template v-else-if="character">
-      <h1 class="text-h4 mb-4">
-        {{ character.identity.characterName || 'Новый персонаж' }}
-      </h1>
+      <header class="character-sheet__header">
+        <div class="character-sheet__heading">
+          <p class="character-sheet__eyebrow">ЛИСТ ПЕРСОНАЖА</p>
 
-      <p class="mb-4">Идентификатор: {{ character.id }}</p>
+          <h1 class="character-sheet__title">
+            {{ character.identity.characterName || 'Новый персонаж' }}
+          </h1>
 
-      <CharacterIdentity
-        :character-id="character.id"
-        :identity="character.identity"
-        @updated="handleIdentityUpdated"
-        @saved="handleSaved"
-        @error="handleError"
-      />
+          <p class="character-sheet__id">ID: {{ character.id }}</p>
+        </div>
 
-      <CharacterAbilities
-        :character-id="character.id"
-        :abilities="character.abilities"
-        @updated="handleAbilitiesUpdated"
-      />
+        <section class="character-sheet__identity">
+          <CharacterIdentity
+            :character-id="character.id"
+            :identity="character.identity"
+            @updated="handleIdentityUpdated"
+            @saved="handleSaved"
+            @error="handleError"
+          />
+        </section>
+      </header>
 
-      <CharacterProficiencyBonus
-        :character-id="character.id"
-        :proficiency-bonus="character.proficiencyBonus ?? 2"
-        @updated="handleProficiencyBonusUpdated"
-        @saved="handleSaved"
-        @error="handleError"
-      />
+      <div class="character-sheet__layout">
+        <div class="character-sheet__column">
+          <CharacterAbilities
+            :character-id="character.id"
+            :abilities="character.abilities"
+            @updated="handleAbilitiesUpdated"
+          />
 
-      <CharacterSavingThrows
-        :character-id="character.id"
-        :saving-throws="character.savingThrows"
-        @updated="handleSavingThrowUpdated"
-        @saved="handleSaved"
-        @error="handleError"
-      />
-      <CharacterSkills
-        :character-id="character.id"
-        :skills="character.skills"
-        @updated="handleSkillUpdated"
-        @saved="handleSaved"
-        @error="handleError"
-      />
-      <CharacterPassivePerception
-        :character-id="character.id"
-        :passive-perception="character.passivePerception ?? 10"
-        @updated="handlePassivePerceptionUpdated"
-        @saved="handleSaved"
-        @error="handleError"
-      />
-      <CharacterProficienciesAndLanguages
-        :character-id="character.id"
-        :items="character.proficienciesAndLanguages"
-        @updated="handleProficienciesAndLanguagesUpdated"
-        @saved="handleSaved"
-        @error="handleError"
-      />
-      <CharacterCombatStats
-        :character-id="character.id"
-        :combat="character.combat"
-        @updated="handleCombatUpdated"
-        @saved="handleSaved"
-        @error="handleError"
-      />
-      <CharacterAttacksAndSpells
-        :character-id="character.id"
-        :attacks="character.attacks"
-        @update:attacks="handleAttacksUpdated"
-      />
-      <CharacterEquipment
-        :character-id="character.id"
-        :equipment="character.equipment"
-        @updated="handleEquipmentUpdated"
-        @saved="handleSaved"
-        @error="handleError"
-      />
+          <CharacterProficiencyBonus
+            :character-id="character.id"
+            :proficiency-bonus="character.proficiencyBonus ?? 2"
+            @updated="handleProficiencyBonusUpdated"
+            @saved="handleSaved"
+            @error="handleError"
+          />
 
-      <CharacterPersonality
-        :character-id="character.id"
-        :personality="character.personality"
-        @updated="handlePersonalityUpdated"
-        @saved="handleSaved"
-        @error="handleError"
-      />
-      <CharacterFeatures
-        :character-id="character.id"
-        :features="character.features"
-        @updated="handleFeaturesUpdated"
-      />
+          <CharacterSavingThrows
+            :character-id="character.id"
+            :saving-throws="character.savingThrows"
+            @updated="handleSavingThrowUpdated"
+            @saved="handleSaved"
+            @error="handleError"
+          />
+
+          <CharacterSkills
+            :character-id="character.id"
+            :skills="character.skills"
+            @updated="handleSkillUpdated"
+            @saved="handleSaved"
+            @error="handleError"
+          />
+
+          <CharacterPassivePerception
+            :character-id="character.id"
+            :passive-perception="character.passivePerception ?? 10"
+            @updated="handlePassivePerceptionUpdated"
+            @saved="handleSaved"
+            @error="handleError"
+          />
+        </div>
+
+        <div class="character-sheet__column">
+          <CharacterCombatStats
+            :character-id="character.id"
+            :combat="character.combat"
+            @updated="handleCombatUpdated"
+            @saved="handleSaved"
+            @error="handleError"
+          />
+
+          <CharacterAttacksAndSpells
+            :character-id="character.id"
+            :attacks="character.attacks"
+            @update:attacks="handleAttacksUpdated"
+          />
+
+          <CharacterFeatures
+            :character-id="character.id"
+            :features="character.features"
+            @updated="handleFeaturesUpdated"
+          />
+        </div>
+
+        <div class="character-sheet__column">
+          <CharacterProficienciesAndLanguages
+            :character-id="character.id"
+            :items="character.proficienciesAndLanguages"
+            @updated="handleProficienciesAndLanguagesUpdated"
+            @saved="handleSaved"
+            @error="handleError"
+          />
+
+          <CharacterEquipment
+            :character-id="character.id"
+            :equipment="character.equipment"
+            @updated="handleEquipmentUpdated"
+            @saved="handleSaved"
+            @error="handleError"
+          />
+
+          <CharacterPersonality
+            :character-id="character.id"
+            :personality="character.personality"
+            @updated="handlePersonalityUpdated"
+            @saved="handleSaved"
+            @error="handleError"
+          />
+        </div>
+      </div>
+
+      <v-snackbar v-if="saveMessage" timeout="2500">
+        {{ saveMessage }}
+      </v-snackbar>
     </template>
   </v-container>
 </template>
+
+<style scoped>
+.character-sheet {
+  width: min(100%, 1600px);
+  margin-inline: auto;
+  padding-bottom: 40px;
+  color: var(--text-color);
+  background: var(--page-background);
+}
+
+.character-sheet__status {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 48px 16px;
+  color: var(--text-muted);
+}
+
+.character-sheet:deep(.v-btn) {
+  border-color: var(--border-color);
+  color: var(--accent-color);
+}
+
+.character-sheet:deep(.v-btn:hover) {
+  color: var(--button-hover-border);
+  background: var(--page-surface);
+}
+
+.character-sheet__header {
+  display: grid;
+  gap: 18px;
+  margin-bottom: 24px;
+  color: var(--text-color);
+}
+
+.character-sheet__heading {
+  min-width: 0;
+  padding: 20px 24px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--page-surface);
+}
+
+.character-sheet__eyebrow {
+  margin: 0 0 8px;
+  color: var(--accent-color);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  line-height: 1.4;
+}
+
+.character-sheet__title {
+  margin: 0;
+  color: var(--heading-color);
+  font-size: clamp(1.6rem, 3vw, 2.25rem);
+  font-weight: 800;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.character-sheet__id {
+  margin: 8px 0 0;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  overflow-wrap: anywhere;
+}
+
+.character-sheet__identity,
+.character-sheet__column {
+  min-width: 0;
+}
+
+.character-sheet__layout {
+  display: grid;
+  grid-template-columns:
+    minmax(220px, 0.85fr)
+    minmax(320px, 1.3fr)
+    minmax(240px, 0.95fr);
+  align-items: start;
+  gap: 20px;
+}
+
+.character-sheet__column {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+@media (max-width: 1100px) {
+  .character-sheet__layout {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .character-sheet__column:last-child {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: 16px;
+  }
+}
+
+@media (max-width: 700px) {
+  .character-sheet {
+    padding-inline: 12px;
+  }
+
+  .character-sheet__heading {
+    padding: 18px;
+  }
+
+  .character-sheet__layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+
+  .character-sheet__column:last-child {
+    grid-column: auto;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .character-sheet__column {
+    gap: 16px;
+  }
+}
+</style>

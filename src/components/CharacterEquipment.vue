@@ -25,7 +25,6 @@ const items = ref<EquipmentItem[]>(props.equipment.items.map((item) => ({ ...ite
 
 const newItemName = ref('')
 const newItemQuantity = ref(1)
-const newItemNote = ref('')
 const isAdding = ref(false)
 const isAddFormVisible = ref(false)
 
@@ -53,7 +52,6 @@ function handleCancelAddForm() {
   isAddFormVisible.value = false
   newItemName.value = ''
   newItemQuantity.value = 1
-  newItemNote.value = ''
 }
 
 async function handleCurrencyChange(key: keyof Character['equipment']['currency'], event: Event) {
@@ -103,13 +101,11 @@ async function handleAddItem() {
     const item = await createEquipmentItem(props.characterId, {
       name,
       quantity: newItemQuantity.value,
-      note: newItemNote.value.trim() || null,
     })
 
     items.value.push(item)
     newItemName.value = ''
     newItemQuantity.value = 1
-    newItemNote.value = ''
     isAddFormVisible.value = false
 
     emitEquipmentUpdated()
@@ -199,66 +195,63 @@ async function handleDeleteItem(itemId: string) {
 <template>
   <section class="equipment">
     <h2 class="equipment__title">Снаряжение</h2>
-
-    <div class="equipment__currency">
-      <label class="equipment__currency-field">
-        <span>ММ</span>
-        <input
-          type="number"
-          min="0"
-          max="999999"
-          :value="currency.cp"
-          @change="handleCurrencyChange('cp', $event)"
-        />
-      </label>
-
-      <label class="equipment__currency-field">
-        <span>СМ</span>
-        <input
-          type="number"
-          min="0"
-          max="999999"
-          :value="currency.sp"
-          @change="handleCurrencyChange('sp', $event)"
-        />
-      </label>
-
-      <label class="equipment__currency-field">
-        <span>ЭМ</span>
-        <input
-          type="number"
-          min="0"
-          max="999999"
-          :value="currency.ep"
-          @change="handleCurrencyChange('ep', $event)"
-        />
-      </label>
-
-      <label class="equipment__currency-field">
-        <span>ЗМ</span>
-        <input
-          type="number"
-          min="0"
-          max="999999"
-          :value="currency.gp"
-          @change="handleCurrencyChange('gp', $event)"
-        />
-      </label>
-
-      <label class="equipment__currency-field">
-        <span>ПМ</span>
-        <input
-          type="number"
-          min="0"
-          max="999999"
-          :value="currency.pp"
-          @change="handleCurrencyChange('pp', $event)"
-        />
-      </label>
-    </div>
-
     <div class="equipment__items">
-      <h3 class="equipment__subtitle">Предметы</h3>
+      <div class="equipment__currency">
+        <label class="equipment__currency-field">
+          <span>ММ</span>
+          <input
+            type="number"
+            min="0"
+            max="999999"
+            :value="currency.cp"
+            @change="handleCurrencyChange('cp', $event)"
+          />
+        </label>
+
+        <label class="equipment__currency-field">
+          <span>СМ</span>
+          <input
+            type="number"
+            min="0"
+            max="999999"
+            :value="currency.sp"
+            @change="handleCurrencyChange('sp', $event)"
+          />
+        </label>
+
+        <label class="equipment__currency-field">
+          <span>ЭМ</span>
+          <input
+            type="number"
+            min="0"
+            max="999999"
+            :value="currency.ep"
+            @change="handleCurrencyChange('ep', $event)"
+          />
+        </label>
+
+        <label class="equipment__currency-field">
+          <span>ЗМ</span>
+          <input
+            type="number"
+            min="0"
+            max="999999"
+            :value="currency.gp"
+            @change="handleCurrencyChange('gp', $event)"
+          />
+        </label>
+
+        <label class="equipment__currency-field">
+          <span>ПМ</span>
+          <input
+            type="number"
+            min="0"
+            max="999999"
+            :value="currency.pp"
+            @change="handleCurrencyChange('pp', $event)"
+          />
+        </label>
+      </div>
 
       <div v-if="items.length" class="equipment__list">
         <article v-for="item in items" :key="item.id" class="equipment__item">
@@ -280,16 +273,6 @@ async function handleDeleteItem(itemId: string) {
             aria-label="Количество предмета"
             title="Количество"
             @change="handleItemFieldChange(item, 'quantity', $event)"
-          />
-
-          <input
-            class="equipment__item-note"
-            type="text"
-            maxlength="1000"
-            aria-label="Примечание к предмету"
-            placeholder="Примечание"
-            :value="item.note ?? ''"
-            @change="handleItemFieldChange(item, 'note', $event)"
           />
 
           <button
@@ -337,14 +320,6 @@ async function handleDeleteItem(itemId: string) {
           required
         />
 
-        <input
-          v-model="newItemNote"
-          type="text"
-          maxlength="1000"
-          placeholder="Примечание"
-          aria-label="Примечание к новому предмету"
-        />
-
         <div class="equipment__add-actions">
           <button class="equipment__add-button" type="submit" :disabled="isAdding">
             {{ isAdding ? 'Добавление…' : 'Добавить' }}
@@ -369,20 +344,19 @@ async function handleDeleteItem(itemId: string) {
   display: flex;
   flex-direction: column;
   gap: 20px;
-}
-
-.equipment__title,
-.equipment__subtitle {
-  margin: 0;
+  color: var(--text-color);
 }
 
 .equipment__title {
+  display: block;
+  margin: 0;
+  padding: 0 0 10px;
+  border-bottom: 2px solid var(--accent-color);
+  color: var(--heading-color);
   font-size: 1.25rem;
-}
-
-.equipment__subtitle {
-  margin-bottom: 12px;
-  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
 }
 
 .equipment__currency {
@@ -391,29 +365,56 @@ async function handleDeleteItem(itemId: string) {
   gap: 12px;
 }
 
-.equipment__currency-field,
-.equipment__quantity {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.equipment__currency-field span,
-.equipment__quantity span {
+.equipment__currency-field span {
+  display: block;
+  color: var(--text-muted);
+  text-align: center;
   font-size: 0.85rem;
+  font-weight: 700;
 }
 
 .equipment input {
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
-  padding: 8px;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--page-surface);
+  color: var(--text-color);
+  font: inherit;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.equipment input[type='number'] {
+  max-width: 76px;
+  text-align: center;
+}
+
+.equipment input:hover {
+  border-color: var(--card-hover-border);
+}
+
+.equipment input:focus-visible {
+  border-color: var(--accent-color);
+  outline: 2px solid var(--accent-color);
+  outline-offset: 1px;
 }
 
 .equipment__items {
   display: flex;
+  box-sizing: border-box;
   flex-direction: column;
   gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--page-background);
+  color: var(--text-color);
 }
 
 .equipment__list {
@@ -424,24 +425,64 @@ async function handleDeleteItem(itemId: string) {
 
 .equipment__item {
   display: grid;
-  grid-template-columns: minmax(120px, 1fr) 90px minmax(120px, 1fr) auto;
-  align-items: end;
+  grid-template-columns: minmax(0, 1fr) 90px 36px;
+  align-items: center;
   gap: 10px;
 }
 
-.equipment__item-name,
-.equipment__item-note {
-  align-self: end;
+.equipment__item-name {
+  align-self: center;
+}
+
+.equipment__quantity {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .equipment__delete {
-  padding: 8px 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 8px;
+  border: 1px solid var(--delete-border);
+  border-radius: 8px;
+  color: var(--delete-text);
+  background: var(--delete-background);
   cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.equipment__delete:hover {
+  border-color: var(--delete-hover-border);
+  color: var(--delete-text);
+  background: var(--delete-hover-background);
+}
+
+.equipment__delete:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+.equipment__delete svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .equipment__add-form {
   display: grid;
-  grid-template-columns: minmax(120px, 1fr) 90px minmax(120px, 1fr);
+  grid-template-columns: minmax(0, 1fr) 90px;
   gap: 10px;
 }
 
@@ -455,33 +496,56 @@ async function handleDeleteItem(itemId: string) {
 .equipment__add-button,
 .equipment__cancel-button {
   justify-self: start;
-  padding: 8px 12px;
+  min-height: 38px;
+  padding: 8px 14px;
+  border: 1px solid var(--button-border);
+  border-radius: 8px;
+  font: inherit;
+  font-weight: 600;
   cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.equipment__add-button {
+  color: var(--button-text);
+  background: var(--button-background);
+}
+
+.equipment__add-button:hover:not(:disabled) {
+  border-color: var(--button-hover-border);
+  background: var(--button-hover-background);
+}
+
+.equipment__cancel-button {
+  border-color: var(--border-color);
+  color: var(--text-color);
+  background: var(--page-surface);
+}
+
+.equipment__cancel-button:hover:not(:disabled) {
+  border-color: var(--card-hover-border);
+  color: var(--accent-color);
+  background: var(--page-background);
+}
+
+.equipment__add-button:focus-visible,
+.equipment__cancel-button:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
 }
 
 .equipment__add-button:disabled,
 .equipment__cancel-button:disabled {
-  cursor: wait;
-}
-
-.equipment__cancel-button {
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  background: transparent;
-}
-
-.equipment__add-form button {
-  padding: 8px 12px;
-  cursor: pointer;
-}
-
-.equipment__add-form button:disabled {
-  cursor: wait;
+  cursor: not-allowed;
+  opacity: 0.65;
 }
 
 .equipment__empty {
   margin: 0;
-  opacity: 0.7;
+  color: var(--text-muted);
 }
 
 @media (max-width: 700px) {
@@ -489,42 +553,28 @@ async function handleDeleteItem(itemId: string) {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .equipment__item,
+  .equipment__item {
+    grid-template-columns: minmax(0, 1fr) 76px 36px;
+  }
+
   .equipment__add-form {
-    grid-template-columns: 1fr 90px;
-  }
-
-  .equipment__item-note,
-  .equipment__add-form input:nth-of-type(3) {
-    grid-column: 1 / -1;
+    grid-template-columns: minmax(0, 1fr) 76px;
   }
 }
 
-.equipment__delete {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  padding: 8px;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  color: #c62828;
-  background: transparent;
-  cursor: pointer;
-}
+@media (max-width: 420px) {
+  .equipment__currency {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 
-.equipment__delete svg {
-  width: 18px;
-  height: 18px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
+  .equipment__item {
+    grid-template-columns: minmax(0, 1fr) 64px 36px;
+    gap: 6px;
+  }
 
-.equipment__delete:hover {
-  background: #ffebee;
+  .equipment__add-form {
+    grid-template-columns: minmax(0, 1fr) 64px;
+    gap: 8px;
+  }
 }
 </style>

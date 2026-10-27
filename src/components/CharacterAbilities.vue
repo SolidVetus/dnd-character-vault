@@ -72,9 +72,10 @@ async function saveAbility(ability: AbilityId) {
   }
 }
 </script>
+
 <template>
-  <section class="mb-6">
-    <h2 class="text-h5 mb-3">Характеристики</h2>
+  <section class="abilities-section">
+    <h2 class="abilities-section__title">Характеристики</h2>
 
     <v-row>
       <v-col
@@ -82,10 +83,10 @@ async function saveAbility(ability: AbilityId) {
         :key="ability"
         cols="12"
         sm="6"
-        md="4"
+        lg="4"
       >
-        <v-card class="pa-3" variant="outlined">
-          <v-card-title class="text-subtitle-1">
+        <v-card class="ability-card" variant="outlined">
+          <v-card-title class="ability-card__title">
             {{ abilityNames[ability] }}
           </v-card-title>
 
@@ -109,7 +110,7 @@ async function saveAbility(ability: AbilityId) {
             />
 
             <v-btn
-              color="primary"
+              class="abilities__save-button"
               block
               :loading="savingAbility === ability"
               :disabled="savingAbility !== null"
@@ -121,6 +122,7 @@ async function saveAbility(ability: AbilityId) {
         </v-card>
       </v-col>
     </v-row>
+
     <v-alert v-if="error" type="error" class="mt-3">
       {{ error }}
     </v-alert>
@@ -130,3 +132,115 @@ async function saveAbility(ability: AbilityId) {
     </v-alert>
   </section>
 </template>
+
+<style scoped>
+.abilities-section {
+  margin-bottom: 24px;
+  color: var(--text-color);
+}
+
+.abilities-section__title {
+  display: block;
+  margin: 0 0 16px;
+  padding: 0 0 10px;
+  border-bottom: 2px solid var(--accent-color);
+  color: var(--heading-color);
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
+}
+
+.ability-card {
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--page-surface);
+  color: var(--text-color);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 6%);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.ability-card:hover {
+  border-color: var(--card-hover-border);
+  box-shadow: 0 4px 14px rgb(0 0 0 / 10%);
+}
+
+.ability-card__title {
+  padding-bottom: 4px;
+  color: var(--heading-color);
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.ability-card :deep(.v-card-text) {
+  color: var(--text-color);
+}
+
+.ability-card :deep(.v-field) {
+  background: var(--page-surface);
+  color: var(--text-color);
+}
+
+.ability-card :deep(.v-field__outline) {
+  color: var(--border-color);
+}
+
+.ability-card :deep(.v-field--focused .v-field__outline) {
+  color: var(--accent-color);
+}
+
+.ability-card :deep(input),
+.ability-card :deep(.v-field__input) {
+  color: var(--text-color);
+  opacity: 1;
+}
+
+.ability-card :deep(.v-label) {
+  color: var(--text-muted);
+  opacity: 1;
+}
+
+.abilities__save-button {
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--button-border);
+  border-radius: 8px;
+  background: var(--button-background);
+  box-shadow: 0 2px 4px rgb(0 0 0 / 15%);
+  color: var(--button-text);
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.017857em;
+  line-height: 1.25rem;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.abilities__save-button :deep(.v-btn__content) {
+  color: var(--button-text);
+}
+
+.abilities__save-button:hover:not(:disabled) {
+  border-color: var(--button-hover-border);
+  background: var(--button-hover-background);
+  box-shadow: 0 3px 7px rgb(0 0 0 / 20%);
+}
+
+.abilities__save-button:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+.abilities__save-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+</style>
