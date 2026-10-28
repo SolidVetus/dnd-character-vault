@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import type { Character, EquipmentItem } from '@/types/character'
 import {
   createEquipmentItem,
   deleteEquipmentItem,
   updateCharacterCurrency,
   updateEquipmentItem,
-  type Character,
-  type EquipmentItem,
-} from '../api/characters'
+} from '../api/character/equipment'
 
 const props = defineProps<{
   characterId: string

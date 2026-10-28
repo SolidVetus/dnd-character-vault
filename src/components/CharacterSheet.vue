@@ -1,11 +1,7 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import {
-  getCharacter,
-  type AbilityId,
-  type Character,
-  type CharacterSkill,
-} from '../api/characters'
+import { ref, watch } from 'vue'
+import { storeToRefs } from 'pinia'
+import { useCharacterStore } from '@/stores/useCharacterStore'
 
 import CharacterIdentity from './CharacterIdentity.vue'
 import CharacterAbilities from './CharacterAbilities.vue'
@@ -26,96 +22,19 @@ interface Props {
 
 const props = defineProps<Props>()
 
-const emit = defineEmits<{
-  back: []
-}>()
+const characterStore = useCharacterStore()
 
-const character = ref<Character | null>(null)
-const loading = ref(true)
-const error = ref('')
+const { character, loading, error } = storeToRefs(characterStore)
 
 const saveMessage = ref('')
 
-onMounted(async () => {
-  try {
-    character.value = await getCharacter(props.characterId)
-  } catch {
-    error.value = 'Не удалось загрузить персонажа. Проверь, запущен ли API.'
-  } finally {
-    loading.value = false
-  }
-})
-
-function handleIdentityUpdated(identity: Character['identity']) {
-  if (!character.value) return
-  character.value.identity = identity
-}
-
-function handleAbilitiesUpdated(ability: AbilityId, value: { score: number; mod: number }) {
-  if (!character.value) return
-  character.value.abilities[ability] = value
-}
-
-function handleSavingThrowUpdated(updatedSavingThrow: Character['savingThrows'][number]) {
-  if (!character.value) return
-  const index = character.value.savingThrows.findIndex(
-    (item) => item.ability === updatedSavingThrow.ability,
-  )
-
-  if (index !== -1) {
-    character.value.savingThrows[index] = updatedSavingThrow
-  }
-}
-
-function handleSkillUpdated(updatedSkill: CharacterSkill) {
-  if (!character.value) return
-
-  const index = character.value.skills.findIndex((item) => item.id === updatedSkill.id)
-
-  if (index !== -1) {
-    character.value.skills[index] = updatedSkill
-  }
-}
-
-function handleProficiencyBonusUpdated(value: number) {
-  if (!character.value) return
-  character.value.proficiencyBonus = value
-}
-
-function handlePassivePerceptionUpdated(value: number) {
-  if (!character.value) return
-  character.value.passivePerception = value
-}
-
-function handleProficienciesAndLanguagesUpdated(items: string[]) {
-  if (!character.value) return
-  character.value.proficienciesAndLanguages = items
-}
-
-function handleCombatUpdated(combat: Character['combat']) {
-  if (!character.value) return
-  character.value.combat = combat
-}
-
-function handleAttacksUpdated(attacks: Character['attacks']) {
-  if (!character.value) return
-  character.value.attacks = attacks
-}
-
-function handleEquipmentUpdated(equipment: Character['equipment']) {
-  if (!character.value) return
-  character.value.equipment = equipment
-}
-
-function handlePersonalityUpdated(personality: Character['personality']) {
-  if (!character.value) return
-  character.value.personality = personality
-}
-
-function handleFeaturesUpdated(features: Character['features']) {
-  if (!character.value) return
-  character.value.features = features
-}
+watch(
+  () => props.characterId,
+  (id) => {
+    void characterStore.loadCharacter(id)
+  },
+  { immediate: true },
+)
 
 function handleSaved(message: string) {
   saveMessage.value = message
@@ -153,7 +72,7 @@ function handleError(message: string) {
           <CharacterIdentity
             :character-id="character.id"
             :identity="character.identity"
-            @updated="handleIdentityUpdated"
+            @updated="characterStore.updateCharacter('identity', $event)"
             @saved="handleSaved"
             @error="handleError"
           />
@@ -165,13 +84,13 @@ function handleError(message: string) {
           <CharacterAbilities
             :character-id="character.id"
             :abilities="character.abilities"
-            @updated="handleAbilitiesUpdated"
+            @updated="(ability, value) => characterStore.updateAbilities(ability, value)"
           />
 
           <CharacterProficiencyBonus
             :character-id="character.id"
             :proficiency-bonus="character.proficiencyBonus ?? 2"
-            @updated="handleProficiencyBonusUpdated"
+            @updated="characterStore.updateCharacter('proficiencyBonus', $event)"
             @saved="handleSaved"
             @error="handleError"
           />
@@ -179,7 +98,7 @@ function handleError(message: string) {
           <CharacterSavingThrows
             :character-id="character.id"
             :saving-throws="character.savingThrows"
-            @updated="handleSavingThrowUpdated"
+            @updated="characterStore.updateSavingThrow($event)"
             @saved="handleSaved"
             @error="handleError"
           />
@@ -187,7 +106,7 @@ function handleError(message: string) {
           <CharacterSkills
             :character-id="character.id"
             :skills="character.skills"
-            @updated="handleSkillUpdated"
+            @updated="characterStore.updateSkill($event)"
             @saved="handleSaved"
             @error="handleError"
           />
@@ -195,7 +114,7 @@ function handleError(message: string) {
           <CharacterPassivePerception
             :character-id="character.id"
             :passive-perception="character.passivePerception ?? 10"
-            @updated="handlePassivePerceptionUpdated"
+            @updated="characterStore.updateCharacter('passivePerception', $event)"
             @saved="handleSaved"
             @error="handleError"
           />
@@ -205,7 +124,7 @@ function handleError(message: string) {
           <CharacterCombatStats
             :character-id="character.id"
             :combat="character.combat"
-            @updated="handleCombatUpdated"
+            @updated="characterStore.updateCharacter('combat', $event)"
             @saved="handleSaved"
             @error="handleError"
           />
@@ -213,13 +132,13 @@ function handleError(message: string) {
           <CharacterAttacksAndSpells
             :character-id="character.id"
             :attacks="character.attacks"
-            @update:attacks="handleAttacksUpdated"
+            @update:attacks="characterStore.updateCharacter('attacks', $event)"
           />
 
           <CharacterFeatures
             :character-id="character.id"
             :features="character.features"
-            @updated="handleFeaturesUpdated"
+            @updated="characterStore.updateCharacter('features', $event)"
           />
         </div>
 
@@ -227,7 +146,7 @@ function handleError(message: string) {
           <CharacterProficienciesAndLanguages
             :character-id="character.id"
             :items="character.proficienciesAndLanguages"
-            @updated="handleProficienciesAndLanguagesUpdated"
+            @updated="characterStore.updateCharacter('proficienciesAndLanguages', $event)"
             @saved="handleSaved"
             @error="handleError"
           />
@@ -235,7 +154,7 @@ function handleError(message: string) {
           <CharacterEquipment
             :character-id="character.id"
             :equipment="character.equipment"
-            @updated="handleEquipmentUpdated"
+            @updated="characterStore.updateCharacter('equipment', $event)"
             @saved="handleSaved"
             @error="handleError"
           />
@@ -243,7 +162,7 @@ function handleError(message: string) {
           <CharacterPersonality
             :character-id="character.id"
             :personality="character.personality"
-            @updated="handlePersonalityUpdated"
+            @updated="characterStore.updateCharacter('personality', $event)"
             @saved="handleSaved"
             @error="handleError"
           />

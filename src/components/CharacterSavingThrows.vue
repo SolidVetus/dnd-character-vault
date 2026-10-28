@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { updateCharacterSavingThrow, type AbilityId, type Character } from '../api/characters'
+import type { AbilityId, Character } from '@/types/character'
+import { updateCharacterSavingThrow } from '../api/character/abilities'
 
 interface Props {
   characterId: string

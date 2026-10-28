@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { API_BASE_URL, createCharacter, deleteCharacter, getAllCharacters } from './api/characters'
+import { createCharacter, deleteCharacter, getAllCharacters } from './api/characters'
 import CharacterSheet from './components/CharacterSheet.vue'
+import { getAvatarUrl } from '@/utils/avatar'
 
 interface CharacterPreview {
   id: string
@@ -139,11 +140,7 @@ async function handleDeleteCharacter(id: string) {
             <v-col v-for="character in characters" :key="character.id" cols="12" sm="6" md="3">
               <v-card rounded="lg" border flat class="h-100 character-card">
                 <v-img
-                  :src="
-                    character.avatarUrl
-                      ? `${API_BASE_URL}${character.avatarUrl}`
-                      : '/img/placeholderImg.webp'
-                  "
+                  :src="getAvatarUrl(character.avatarUrl) || '/img/placeholderImg.webp'"
                   height="380"
                   cover
                   class="bg-grey-lighten-4 character-card__image"

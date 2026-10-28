@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
+import type { Character } from '@/types/character'
+import { getAvatarUrl } from '@/utils/avatar'
+
 import {
-  API_BASE_URL,
+  uploadCharacterAvatar,
   deleteCharacterAvatar,
   updateCharacterIdentity,
-  uploadCharacterAvatar,
-  type Character,
-} from '../api/characters'
+} from '@/api/character/identity'
 
 interface Props {
   characterId: string
@@ -38,15 +39,7 @@ const avatarBusy = ref(false)
 const avatarError = ref('')
 const avatarInput = ref<HTMLInputElement | null>(null)
 
-const avatarUrl = computed(() => {
-  const url = props.identity.avatarUrl
-
-  if (!url) return ''
-  if (/^https?:\/\//i.test(url)) return url
-
-  const origin = API_BASE_URL.replace(/\/api$/, '')
-  return `${origin}${url.startsWith('/') ? '' : '/'}${url}`
-})
+const avatarUrl = computed(() => getAvatarUrl(props.identity.avatarUrl))
 
 function openAvatarPicker() {
   avatarInput.value?.click()

@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { reactive, ref, watch } from 'vue'
+import type { Character } from '@/types/character'
+
 import {
   updateCharacterCombat,
-  updateCharacterHp,
+  updateCharacterHits,
   updateCharacterDeathSaves,
-  type Character,
-} from '../api/characters'
+} from '../api/character/combat'
 
 interface Props {
   characterId: string
@@ -85,7 +86,7 @@ async function saveHp() {
   savingHp.value = true
 
   try {
-    const hp = await updateCharacterHp(props.characterId, { ...form.hp })
+    const hp = await updateCharacterHits(props.characterId, { ...form.hp })
 
     Object.assign(form.hp, hp)
 

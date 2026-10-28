@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { updateProficiencyBonus } from '../api/characters'
+import { updateProficiencyBonus } from '../api/character/abilities'
 
 interface Props {
   characterId: string

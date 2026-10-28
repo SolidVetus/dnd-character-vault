@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import type { CharacterFeature } from '@/types/character'
+
 import {
   createCharacterFeature,
   updateCharacterFeature,
   deleteCharacterFeature,
-  type CharacterFeature,
-} from '@/api/characters'
+} from '@/api/character/features'
 
 const props = defineProps<{
   characterId: string

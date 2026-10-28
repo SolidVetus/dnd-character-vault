@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { reactive, watch } from 'vue'
-import { updatePersonality, type Character } from '../api/characters'
+import type { Character } from '@/types/character'
+import { updatePersonality } from '../api/character/identity'
 
 interface Props {
   characterId: string
