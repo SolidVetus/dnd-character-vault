@@ -1,62 +1,44 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import { createCharacter, deleteCharacter, getAllCharacters } from './api/characters'
-import CharacterSheet from './components/CharacterSheet.vue'
-import { getAvatarUrl } from '@/utils/avatar'
+import { computed, ref } from 'vue'
+import { RouterView, useRoute, useRouter } from 'vue-router'
+import { createCharacter } from '@/api/characters'
 
-interface CharacterPreview {
-  id: string
-  characterName: string
-  avatarUrl: string | null
-}
+const route = useRoute()
+const router = useRouter()
 
-const characters = ref<CharacterPreview[]>([])
-const isLoading = ref(false)
+const isDarkTheme = ref(localStorage.getItem('theme') === 'dark')
+const isCreatingCharacter = ref(false)
 const error = ref('')
-const openedCharacterId = ref<string | null>(null)
 
-const isDarkTheme = ref(false)
+const isCharacterPage = computed(() => route.name === 'character')
 
 const themeIcon = computed(() => (isDarkTheme.value ? 'mdi-weather-sunny' : 'mdi-weather-night'))
 
 const themeLabel = computed(() => (isDarkTheme.value ? 'Светлая тема' : 'Тёмная тема'))
 
-onMounted(async () => {
-  isLoading.value = true
-  error.value = ''
+function toggleTheme() {
+  isDarkTheme.value = !isDarkTheme.value
 
-  try {
-    characters.value = await getAllCharacters()
-  } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Не удалось загрузить персонажей'
-  } finally {
-    isLoading.value = false
-  }
-})
-
-async function handleCreateCharacter() {
-  error.value = ''
-  openedCharacterId.value = null
-  try {
-    const newCharacter = await createCharacter()
-    characters.value.push(newCharacter)
-  } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Не удалось создать персонажа'
-  }
+  localStorage.setItem('theme', isDarkTheme.value ? 'dark' : 'light')
 }
 
-async function handleDeleteCharacter(id: string) {
+async function handleCreateCharacter() {
+  if (isCreatingCharacter.value) return
+
   error.value = ''
+  isCreatingCharacter.value = true
 
   try {
-    await deleteCharacter(id)
-    characters.value = characters.value.filter((character) => character.id !== id)
+    const newCharacter = await createCharacter()
 
-    if (openedCharacterId.value === id) {
-      openedCharacterId.value = null
-    }
+    await router.push({
+      name: 'character',
+      params: { id: newCharacter.id },
+    })
   } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Не удалось удалить персонажа'
+    error.value = err instanceof Error ? err.message : 'Не удалось создать персонажа'
+  } finally {
+    isCreatingCharacter.value = false
   }
 }
 </script>
@@ -73,17 +55,15 @@ async function handleDeleteCharacter(id: string) {
 
         <v-spacer />
 
-        <v-btn
-          v-if="openedCharacterId"
-          class="app-header__create-button mr-2"
-          @click="openedCharacterId = null"
-        >
+        <v-btn v-if="isCharacterPage" class="app-header__create-button mr-2" :to="{ name: 'home' }">
           Список персонажей
         </v-btn>
 
         <v-btn
           prepend-icon="mdi-plus"
           class="app-header__create-button"
+          :loading="isCreatingCharacter"
+          :disabled="isCreatingCharacter"
           @click="handleCreateCharacter"
         >
           Создать персонажа
@@ -95,7 +75,7 @@ async function handleDeleteCharacter(id: string) {
           class="theme-toggle ml-2"
           :aria-label="themeLabel"
           :title="themeLabel"
-          @click="isDarkTheme = !isDarkTheme"
+          @click="toggleTheme"
         >
           <v-icon :icon="themeIcon" />
         </v-btn>
@@ -104,80 +84,11 @@ async function handleDeleteCharacter(id: string) {
 
     <v-main>
       <v-container class="home-page">
-        <CharacterSheet
-          v-if="openedCharacterId"
-          :character-id="openedCharacterId"
-          @back="openedCharacterId = null"
-        />
+        <v-alert v-if="error" type="error" variant="tonal" class="mb-4">
+          {{ error }}
+        </v-alert>
 
-        <template v-else>
-          <v-alert v-if="isLoading" type="info" variant="tonal" class="mb-4">
-            Загружаем персонажей...
-          </v-alert>
-
-          <v-alert v-if="error" type="error" variant="tonal" class="mb-4">
-            {{ error }}
-          </v-alert>
-
-          <v-alert
-            v-else-if="!isLoading && characters.length === 0"
-            type="info"
-            variant="tonal"
-            class="mb-4"
-          >
-            Персонажей пока нет.
-          </v-alert>
-
-          <div class="mb-8 home-page__intro">
-            <h1 class="text-h4 font-weight-bold mb-2 home-page__title">Мои персонажи</h1>
-
-            <p class="text-body-1 text-medium-emphasis home-page__subtitle">
-              Твои приключения начинаются здесь.
-            </p>
-          </div>
-
-          <v-row v-if="!isLoading && characters.length > 0" class="character-grid">
-            <v-col v-for="character in characters" :key="character.id" cols="12" sm="6" md="3">
-              <v-card rounded="lg" border flat class="h-100 character-card">
-                <v-img
-                  :src="getAvatarUrl(character.avatarUrl) || '/img/placeholderImg.webp'"
-                  height="380"
-                  cover
-                  class="bg-grey-lighten-4 character-card__image"
-                />
-
-                <v-card-item>
-                  <v-card-title class="font-weight-bold character-card__title">
-                    {{ character.characterName }}
-                  </v-card-title>
-                </v-card-item>
-
-                <v-divider />
-
-                <v-card-actions class="pa-4 character-card__actions">
-                  <v-btn
-                    variant="tonal"
-                    color="primary"
-                    prepend-icon="mdi-pencil"
-                    class="character-card__open-button"
-                    @click="openedCharacterId = character.id"
-                  >
-                    Открыть лист
-                  </v-btn>
-
-                  <v-btn
-                    variant="tonal"
-                    color="error"
-                    icon="mdi-delete"
-                    aria-label="Удалить персонажа"
-                    class="character-card__delete-button"
-                    @click="handleDeleteCharacter(character.id)"
-                  />
-                </v-card-actions>
-              </v-card>
-            </v-col>
-          </v-row>
-        </template>
+        <RouterView />
       </v-container>
     </v-main>
   </v-app>
