@@ -375,27 +375,23 @@ async function removeFeature(feature: CharacterFeature) {
 .add-feature-button,
 .feature-actions button:not(.feature-icon-button) {
   flex: 0 0 auto;
-  min-height: 36px;
-  padding: 0.55rem 1rem;
+  min-height: 40px;
+  padding: 0 16px;
   border: 1px solid var(--button-border);
   border-radius: 8px;
-  background: var(--button-background);
-  color: var(--button-text);
-  font: inherit;
-  font-size: 0.9rem;
+  background: var(--button-background) !important;
+  color: var(--button-text) !important;
   font-weight: 600;
-  cursor: pointer;
+  letter-spacing: 0.017857em;
   transition:
-    background-color 0.2s ease,
-    border-color 0.2s ease,
-    color 0.2s ease,
-    box-shadow 0.2s ease;
+    background-color 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .add-feature-button:hover:not(:disabled),
 .feature-actions button:not(.feature-icon-button):hover:not(:disabled) {
   border-color: var(--button-hover-border);
-  background: var(--button-hover-background);
+  background: var(--button-hover-background) !important;
 }
 
 .add-feature-button:focus-visible,

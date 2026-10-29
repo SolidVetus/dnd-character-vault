@@ -348,21 +348,14 @@ function setDeathSaveFailures(value: number) {
   border: 1px solid var(--border-color);
   border-radius: 12px;
   background: var(--page-surface) !important;
-  color: var(--text-color);
 }
 
 .combat-card :deep(.v-card-text) {
-  border: 1px solid var(--border-color);
   color: var(--text-color);
 }
 
 .combat-card__content {
   color: var(--text-color);
-}
-
-.combat-card :deep(.v-divider) {
-  border-color: var(--border-color);
-  opacity: 1;
 }
 
 .combat-card :deep(.v-field) {
@@ -401,22 +394,17 @@ function setDeathSaveFailures(value: number) {
   padding: 0 16px;
   border: 1px solid var(--button-border);
   border-radius: 8px;
-  background: var(--button-background);
-  color: var(--button-text);
-  font-family: inherit;
-  font-size: 0.875rem;
+  background: var(--button-background) !important;
   font-weight: 600;
   letter-spacing: 0.017857em;
-  line-height: 1.25rem;
-  cursor: pointer;
   transition:
     background-color 0.15s ease,
     border-color 0.15s ease;
 }
 
-.combat-card__save-button:hover:not(:disabled) {
+.combat-card__save-button:hover {
   border-color: var(--button-hover-border);
-  background: var(--button-hover-background);
+  background: var(--button-hover-background) !important;
 }
 
 .combat-card__save-button:focus-visible {

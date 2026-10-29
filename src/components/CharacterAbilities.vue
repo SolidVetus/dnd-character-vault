@@ -210,29 +210,22 @@ async function saveAbility(ability: AbilityId) {
   padding: 0 16px;
   border: 1px solid var(--button-border);
   border-radius: 8px;
-  background: var(--button-background);
-  box-shadow: 0 2px 4px rgb(0 0 0 / 15%);
-  color: var(--button-text);
-  font-family: inherit;
-  font-size: 0.875rem;
+  background: var(--button-background) !important;
+  color: var(--button-text) !important;
   font-weight: 600;
   letter-spacing: 0.017857em;
-  line-height: 1.25rem;
-  cursor: pointer;
   transition:
     background-color 0.15s ease,
-    border-color 0.15s ease,
-    box-shadow 0.15s ease;
+    border-color 0.15s ease;
 }
 
 .abilities__save-button :deep(.v-btn__content) {
-  color: var(--button-text);
+  color: var(--button-text) !important;
 }
 
-.abilities__save-button:hover:not(:disabled) {
+.abilities__save-button:hover {
   border-color: var(--button-hover-border);
-  background: var(--button-hover-background);
-  box-shadow: 0 3px 7px rgb(0 0 0 / 20%);
+  background: var(--button-hover-background) !important;
 }
 
 .abilities__save-button:focus-visible {

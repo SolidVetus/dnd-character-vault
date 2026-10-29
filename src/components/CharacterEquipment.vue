@@ -433,13 +433,6 @@ async function handleDeleteItem(itemId: string) {
   align-self: center;
 }
 
-.equipment__quantity {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 6px;
-}
-
 .equipment__delete {
   display: inline-flex;
   align-items: center;

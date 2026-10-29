@@ -262,23 +262,18 @@ async function saveField(field: PersonalityField) {
   padding: 0 16px;
   border: 1px solid var(--button-border);
   border-radius: 8px;
-  background: var(--button-background);
-  color: var(--button-text);
-  font-family: inherit;
-  font-size: 0.875rem;
+  background: var(--button-background) !important;
+  color: var(--button-text) !important;
   font-weight: 600;
   letter-spacing: 0.017857em;
-  line-height: 1.25rem;
-  cursor: pointer;
   transition:
     background-color 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease;
+    border-color 0.15s ease;
 }
 
-.personality-block__save-button:hover:not(:disabled) {
+.personality-block__save-button:hover {
   border-color: var(--button-hover-border);
-  background: var(--button-hover-background);
+  background: var(--button-hover-background) !important;
 }
 
 .personality-block__save-button:focus-visible {
