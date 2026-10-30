@@ -55,7 +55,7 @@ async function saveSkill(skill: CharacterSkill) {
 </script>
 
 <template>
-  <section class="mb-6">
+  <section>
     <h2 class="character-skills__title">Навыки</h2>
 
     <v-card variant="outlined" max-width="700" class="character-skills__card">

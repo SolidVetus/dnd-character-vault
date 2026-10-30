@@ -55,7 +55,7 @@ async function saveProficiencyBonus() {
 </script>
 
 <template>
-  <section class="mb-6">
+  <section>
     <h2 class="proficiency-bonus__title">Бонус мастерства</h2>
 
     <v-card variant="outlined" max-width="700" class="proficiency-bonus__card">

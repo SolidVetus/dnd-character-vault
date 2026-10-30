@@ -235,7 +235,7 @@ body,
 }
 
 .home-page {
-  max-width: 1440px;
+  max-width: 1680px;
   color: var(--text-color);
 }
 

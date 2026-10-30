@@ -87,7 +87,9 @@ function handleError(message: string) {
             :abilities="character.abilities"
             @updated="(ability, value) => characterStore.updateAbilities(ability, value)"
           />
+        </div>
 
+        <div class="character-sheet__column">
           <CharacterInspiration
             :character-id="character.id"
             :inspiration="character.inspiration"
@@ -127,6 +129,14 @@ function handleError(message: string) {
             @saved="handleSaved"
             @error="handleError"
           />
+
+          <CharacterProficienciesAndLanguages
+            :character-id="character.id"
+            :items="character.proficienciesAndLanguages"
+            @updated="characterStore.updateCharacter('proficienciesAndLanguages', $event)"
+            @saved="handleSaved"
+            @error="handleError"
+          />
         </div>
 
         <div class="character-sheet__column">
@@ -144,22 +154,6 @@ function handleError(message: string) {
             @update:attacks="characterStore.updateCharacter('attacks', $event)"
           />
 
-          <CharacterFeatures
-            :character-id="character.id"
-            :features="character.features"
-            @updated="characterStore.updateCharacter('features', $event)"
-          />
-        </div>
-
-        <div class="character-sheet__column">
-          <CharacterProficienciesAndLanguages
-            :character-id="character.id"
-            :items="character.proficienciesAndLanguages"
-            @updated="characterStore.updateCharacter('proficienciesAndLanguages', $event)"
-            @saved="handleSaved"
-            @error="handleError"
-          />
-
           <CharacterEquipment
             :character-id="character.id"
             :equipment="character.equipment"
@@ -167,13 +161,21 @@ function handleError(message: string) {
             @saved="handleSaved"
             @error="handleError"
           />
+        </div>
 
+        <div class="character-sheet__column">
           <CharacterPersonality
             :character-id="character.id"
             :personality="character.personality"
             @updated="characterStore.updateCharacter('personality', $event)"
             @saved="handleSaved"
             @error="handleError"
+          />
+
+          <CharacterFeatures
+            :character-id="character.id"
+            :features="character.features"
+            @updated="characterStore.updateCharacter('features', $event)"
           />
         </div>
       </div>
@@ -260,17 +262,37 @@ function handleError(message: string) {
 .character-sheet__layout {
   display: grid;
   grid-template-columns:
-    minmax(220px, 0.85fr)
-    minmax(320px, 1.3fr)
-    minmax(240px, 0.95fr);
+    minmax(180px, 0.75fr)
+    minmax(260px, 1.1fr)
+    minmax(280px, 1.2fr)
+    minmax(240px, 1fr);
   align-items: start;
-  gap: 20px;
+  gap: 16px;
 }
 
 .character-sheet__column {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  min-width: 0;
+}
+
+.character-sheet__abilities-row {
+  display: grid;
+  grid-template-columns: minmax(0, 0.7fr) minmax(130px, 1fr);
+  align-items: start;
+  gap: 12px;
+}
+
+.character-sheet__abilities-main {
+  min-width: 0;
+}
+
+.character-sheet__abilities-side {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
 }
 
 @media (max-width: 1100px) {
@@ -309,6 +331,17 @@ function handleError(message: string) {
 
   .character-sheet__column {
     gap: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .character-sheet__abilities-row {
+    grid-template-columns: minmax(0, 0.7fr) minmax(110px, 1fr);
+    gap: 8px;
+  }
+
+  .character-sheet__abilities-side {
+    gap: 12px;
   }
 }
 </style>

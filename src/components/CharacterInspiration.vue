@@ -52,7 +52,7 @@ function toggleInspiration() {
 </script>
 
 <template>
-  <section class="mb-6">
+  <section>
     <h2 class="inspiration__title">Вдохновение</h2>
 
     <v-card variant="outlined" max-width="700" class="inspiration__card">

@@ -44,11 +44,9 @@ watch(
 
 const savingAbility = ref<AbilityId | null>(null)
 const error = ref('')
-const saveMessage = ref('')
 
 async function saveAbility(ability: AbilityId) {
   error.value = ''
-  saveMessage.value = ''
   savingAbility.value = ability
 
   try {
@@ -64,8 +62,6 @@ async function saveAbility(ability: AbilityId) {
       score: updatedAbility.score,
       mod: updatedAbility.mod,
     })
-
-    saveMessage.value = `${abilityNames[ability]}: изменения сохранены.`
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Не удалось сохранить характеристику.'
   } finally {
@@ -78,58 +74,64 @@ async function saveAbility(ability: AbilityId) {
   <section class="abilities-section">
     <h2 class="abilities-section__title">Характеристики</h2>
 
-    <v-row>
-      <v-col
+    <div class="abilities-list">
+      <v-card
         v-for="ability in Object.keys(abilityNames) as AbilityId[]"
         :key="ability"
-        cols="12"
-        sm="6"
-        lg="4"
+        class="ability-card"
+        variant="flat"
       >
-        <v-card class="ability-card" variant="outlined">
-          <v-card-title class="ability-card__title">
+        <div class="ability-card__inner">
+          <div class="ability-card__name">
             {{ abilityNames[ability] }}
-          </v-card-title>
+          </div>
 
-          <v-card-text>
+          <div class="ability-card__score">
             <v-text-field
               v-model.number="abilityForms[ability].score"
-              label="Значение"
               type="number"
               min="1"
               max="30"
+              variant="plain"
               density="compact"
+              hide-details
+              single-line
+              @keydown.enter.prevent="saveAbility(ability)"
             />
+          </div>
 
+          <div class="ability-card__modifier">
             <v-text-field
               v-model.number="abilityForms[ability].mod"
-              label="Модификатор"
               type="number"
               min="-10"
               max="10"
+              variant="plain"
               density="compact"
+              hide-details
+              single-line
+              @keydown.enter.prevent="saveAbility(ability)"
             />
+          </div>
 
-            <v-btn
-              class="abilities__save-button"
-              block
-              :loading="savingAbility === ability"
-              :disabled="savingAbility !== null"
-              @click="saveAbility(ability)"
-            >
-              Сохранить
-            </v-btn>
-          </v-card-text>
-        </v-card>
-      </v-col>
-    </v-row>
+          <div class="ability-card__modifier-label">МОДИФИКАТОР</div>
+
+          <v-btn
+            class="abilities__save-button"
+            size="small"
+            variant="text"
+            :loading="savingAbility === ability"
+            :disabled="savingAbility !== null"
+            @click="saveAbility(ability)"
+          >
+            Сохранить
+          </v-btn>
+        </div>
+      </v-card>
+    </div>
 
     <v-alert v-if="error" type="error" class="mt-3">
       {{ error }}
-    </v-alert>
-
-    <v-alert v-if="saveMessage" type="success" class="mt-3">
-      {{ saveMessage }}
     </v-alert>
   </section>
 </template>
@@ -142,7 +144,7 @@ async function saveAbility(ability: AbilityId) {
 
 .abilities-section__title {
   display: block;
-  margin: 0 0 16px;
+  margin: 0 0 20px;
   padding: 0 0 10px;
   border-bottom: 2px solid var(--accent-color);
   color: var(--heading-color);
@@ -152,62 +154,144 @@ async function saveAbility(ability: AbilityId) {
   line-height: 1.4;
 }
 
+.abilities-list {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 18px;
+}
+
 .ability-card {
-  height: 100%;
-  overflow: hidden;
+  position: relative;
+  width: 100%;
+  min-height: 210px;
+  padding: 7px;
+  overflow: visible;
   border: 1px solid var(--border-color);
-  border-radius: 10px;
+  border-radius: 12px;
   background: var(--page-surface);
   color: var(--text-color);
-  box-shadow: 0 2px 8px rgb(0 0 0 / 6%);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 8%);
   transition:
-    border-color 0.15s ease,
-    box-shadow 0.15s ease;
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .ability-card:hover {
   border-color: var(--card-hover-border);
-  box-shadow: 0 4px 14px rgb(0 0 0 / 10%);
+  box-shadow: 0 4px 14px rgb(0 0 0 / 12%);
 }
 
-.ability-card__title {
-  padding-bottom: 4px;
+.ability-card__inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 194px;
+  padding: 12px 14px 8px;
+}
+
+.ability-card__name {
+  width: 100%;
+  padding-bottom: 9px;
+  border-bottom: 1px solid var(--border-color);
   color: var(--heading-color);
-  font-size: 1.05rem;
-  font-weight: 700;
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-transform: uppercase;
 }
 
-.ability-card :deep(.v-card-text) {
+.ability-card__score {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  flex: 1;
+  min-height: 75px;
+}
+
+.ability-card__score :deep(.v-field) {
+  width: 100%;
+  background: transparent;
   color: var(--text-color);
 }
 
-.ability-card :deep(.v-field) {
-  background: var(--page-surface);
-  color: var(--text-color);
+.ability-card__score :deep(.v-field__input) {
+  min-height: 65px;
+  padding: 0;
+  color: var(--heading-color);
+  font-size: 2.7rem;
+  font-weight: 800;
+  line-height: 1;
+  text-align: center;
 }
 
-.ability-card :deep(.v-field__outline) {
-  color: var(--border-color);
+.ability-card__score :deep(input) {
+  text-align: center;
 }
 
-.ability-card :deep(.v-field--focused .v-field__outline) {
-  color: var(--accent-color);
+.ability-card__score :deep(.v-field__outline) {
+  display: none;
 }
 
-.ability-card :deep(input),
-.ability-card :deep(.v-field__input) {
-  color: var(--text-color);
-  opacity: 1;
+.ability-card__modifier {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 76px;
+  height: 52px;
+  margin-top: 4px;
+  border: 2px solid var(--border-color);
+  border-radius: 50%;
+  background: var(--page-background);
+  box-shadow: 0 2px 5px rgb(0 0 0 / 8%);
 }
 
-.ability-card :deep(.v-label) {
+.ability-card__modifier :deep(.v-field) {
+  width: 100%;
+  background: transparent;
+  color: var(--heading-color);
+}
+
+.ability-card__modifier :deep(.v-field__input) {
+  min-height: 40px;
+  padding: 0;
+  color: var(--heading-color);
+  font-size: 1.3rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.ability-card__modifier :deep(input) {
+  width: 100%;
+  padding: 0;
+  text-align: center;
+  appearance: textfield;
+}
+
+.ability-card__modifier :deep(input::-webkit-inner-spin-button),
+.ability-card__modifier :deep(input::-webkit-outer-spin-button) {
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.ability-card__modifier :deep(.v-field__outline) {
+  display: none;
+}
+
+.ability-card__modifier-label {
+  margin-top: 5px;
   color: var(--text-muted);
-  opacity: 1;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
 }
 
 .abilities__save-button {
-  min-height: 40px;
-  padding: 0 16px;
+  min-height: 38px;
+  margin-top: 8px;
+  padding: 8px 14px;
   border: 1px solid var(--button-border);
   border-radius: 8px;
   background: var(--button-background) !important;
@@ -234,7 +318,12 @@ async function saveAbility(ability: AbilityId) {
 }
 
 .abilities__save-button:disabled {
-  cursor: not-allowed;
   opacity: 0.55;
+}
+
+@media (max-width: 480px) {
+  .ability-card {
+    max-width: 210px;
+  }
 }
 </style>

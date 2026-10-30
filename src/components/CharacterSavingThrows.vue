@@ -61,7 +61,7 @@ async function saveSavingThrow(savingThrow: Character['savingThrows'][number]) {
 </script>
 
 <template>
-  <section class="mb-6">
+  <section>
     <h2 class="saving-throws__title">Спасброски</h2>
 
     <v-card variant="outlined" max-width="700" class="saving-throws__card">

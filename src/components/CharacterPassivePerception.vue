@@ -53,7 +53,7 @@ async function savePassivePerception() {
 </script>
 
 <template>
-  <section class="mb-6 passive-perception">
+  <section class="passive-perception">
     <h2 class="passive-perception__title">Пассивная внимательность</h2>
 
     <v-card variant="outlined" max-width="700" class="passive-perception__card">
