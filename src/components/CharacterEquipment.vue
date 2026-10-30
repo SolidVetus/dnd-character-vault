@@ -412,7 +412,7 @@ async function handleDeleteItem(itemId: string) {
   padding: 16px;
   border: 1px solid var(--border-color);
   border-radius: 10px;
-  background: var(--page-background);
+  background: var(--page-surface);
   color: var(--text-color);
 }
 

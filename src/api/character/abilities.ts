@@ -55,6 +55,13 @@ export function updateProficiencyBonus(id: string, value: number): Promise<{ val
   })
 }
 
+export function updateInspiration(id: string, value: boolean): Promise<{ value: boolean }> {
+  return apiRequest<{ value: boolean }>(`/characters/${id}/inspiration`, {
+    method: 'PATCH',
+    body: JSON.stringify({ value }),
+  })
+}
+
 export function updatePassivePerception(id: string, value: number): Promise<{ value: number }> {
   return apiRequest<{ value: number }>(`/characters/${id}/passive-perception`, {
     method: 'PATCH',

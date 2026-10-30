@@ -15,6 +15,7 @@ import CharacterAttacksAndSpells from './CharacterAttacksAndSpells.vue'
 import CharacterEquipment from './CharacterEquipment.vue'
 import CharacterPersonality from './CharacterPersonality.vue'
 import CharacterFeatures from './CharacterFeatures.vue'
+import CharacterInspiration from './CharacterInspiration.vue'
 
 interface Props {
   characterId: string
@@ -85,6 +86,14 @@ function handleError(message: string) {
             :character-id="character.id"
             :abilities="character.abilities"
             @updated="(ability, value) => characterStore.updateAbilities(ability, value)"
+          />
+
+          <CharacterInspiration
+            :character-id="character.id"
+            :inspiration="character.inspiration"
+            @updated="characterStore.updateCharacter('inspiration', $event)"
+            @saved="handleSaved"
+            @error="handleError"
           />
 
           <CharacterProficiencyBonus
