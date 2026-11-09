@@ -47,11 +47,13 @@ async function handleCreateCharacter() {
   <v-app :theme="isDarkTheme ? 'dark' : 'light'" :class="{ 'theme-dark': isDarkTheme }">
     <v-app-bar flat class="app-header">
       <v-container class="d-flex align-center app-header__content">
-        <v-icon icon="mdi-dice-d20" size="32" class="app-header__icon mr-3" />
+        <RouterLink :to="{ name: 'home' }" class="app-header__home-link" aria-label="На главную">
+          <v-icon icon="mdi-dice-d20" size="32" class="app-header__icon mr-3" />
 
-        <v-toolbar-title class="font-weight-bold app-header__title">
-          Character Vault
-        </v-toolbar-title>
+          <v-toolbar-title class="font-weight-bold app-header__title">
+            Character Vault
+          </v-toolbar-title>
+        </RouterLink>
 
         <v-spacer />
 
@@ -210,9 +212,23 @@ body,
   color: var(--dice-icon-color);
 }
 
+.app-header__home-link {
+  display: inline-flex;
+  align-items: center;
+  color: inherit;
+  text-decoration: none;
+}
+
 .app-header__title {
   color: var(--heading-color);
   letter-spacing: 0.01em;
+  transition: filter 0.2s ease-out;
+}
+
+.app-header__home-link:hover .app-header__title,
+.app-header__home-link:focus-visible .app-header__title {
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--accent-color) 65%, transparent))
+    drop-shadow(0 0 8px color-mix(in srgb, var(--accent-color) 35%, transparent));
 }
 
 .app-header__create-button {
