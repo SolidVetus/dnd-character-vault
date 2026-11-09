@@ -72,7 +72,7 @@ async function handleCurrencyChange(key: keyof Character['equipment']['currency'
 
     currency.value = { ...updatedCurrency }
     emitEquipmentUpdated()
-    emit('saved', 'Изменения сохранены.')
+    emit('saved', 'Изменения сохранены')
   } catch {
     currency.value[key] = previousValue
     input.value = String(previousValue)
@@ -108,7 +108,7 @@ async function handleAddItem() {
     isAddFormVisible.value = false
 
     emitEquipmentUpdated()
-    emit('saved', 'Изменения сохранены.')
+    emit('saved', 'Изменения сохранены')
   } catch {
     emit('error', 'Не удалось добавить предмет')
   } finally {
@@ -162,7 +162,7 @@ async function handleItemFieldChange(
 
     items.value[itemIndex] = updatedItem
     emitEquipmentUpdated()
-    emit('saved', 'Изменения сохранены.')
+    emit('saved', 'Изменения сохранены')
   } catch {
     items.value[itemIndex] = previousItem
     input.value = String(previousItem[field] ?? '')
@@ -183,7 +183,7 @@ async function handleDeleteItem(itemId: string) {
   try {
     await deleteEquipmentItem(props.characterId, itemId)
     emitEquipmentUpdated()
-    emit('saved', 'Изменения сохранены.')
+    emit('saved', 'Изменения сохранены')
   } catch {
     items.value.splice(itemIndex, 0, removedItem)
     emit('error', 'Не удалось удалить предмет')

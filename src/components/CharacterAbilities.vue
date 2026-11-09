@@ -12,6 +12,8 @@ const props = defineProps<Props>()
 
 const emit = defineEmits<{
   updated: [ability: AbilityId, value: { score: number; mod: number }]
+  saved: [message: string]
+  error: [message: string]
 }>()
 
 const abilityNames: Record<AbilityId, string> = {
@@ -43,10 +45,8 @@ watch(
 )
 
 const savingAbility = ref<AbilityId | null>(null)
-const error = ref('')
 
 async function saveAbility(ability: AbilityId) {
-  error.value = ''
   savingAbility.value = ability
 
   try {
@@ -62,8 +62,14 @@ async function saveAbility(ability: AbilityId) {
       score: updatedAbility.score,
       mod: updatedAbility.mod,
     })
+
+    const modifier = updatedAbility.mod >= 0 ? `+${updatedAbility.mod}` : updatedAbility.mod
+    emit(
+      'saved',
+      `${abilityNames[ability]}: ${updatedAbility.score}, модификатор ${modifier} — сохранено`,
+    )
   } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Не удалось сохранить характеристику.'
+    emit('error', err instanceof Error ? err.message : 'Не удалось сохранить характеристику')
   } finally {
     savingAbility.value = null
   }
@@ -130,9 +136,6 @@ async function saveAbility(ability: AbilityId) {
       </v-card>
     </div>
 
-    <v-alert v-if="error" type="error" class="mt-3">
-      {{ error }}
-    </v-alert>
   </section>
 </template>
 

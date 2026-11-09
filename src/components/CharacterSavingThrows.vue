@@ -53,7 +53,7 @@ async function saveSavingThrow(savingThrow: Character['savingThrows'][number]) {
     emit('updated', updatedSavingThrow)
     emit('saved', `Спасбросок «${updatedSavingThrow.name}»: изменения сохранены.`)
   } catch (err) {
-    emit('error', err instanceof Error ? err.message : 'Не удалось сохранить спасбросок.')
+    emit('error', err instanceof Error ? err.message : 'Не удалось сохранить спасбросок')
   } finally {
     savingSavingThrow.value = null
   }

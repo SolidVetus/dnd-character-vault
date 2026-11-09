@@ -31,7 +31,7 @@ async function saveProficiencyBonus() {
     proficiencyBonus.value < 0 ||
     proficiencyBonus.value > 10
   ) {
-    emit('error', 'Бонус мастерства должен быть целым числом от 0 до 10.')
+    emit('error', 'Бонус мастерства должен быть целым числом от 0 до 10')
     return
   }
 
@@ -41,12 +41,12 @@ async function saveProficiencyBonus() {
     const result = await updateProficiencyBonus(props.characterId, proficiencyBonus.value)
     proficiencyBonus.value = result.value
     emit('updated', result.value)
-    emit('saved', 'Бонус мастерства сохранён.')
+    emit('saved', 'Бонус мастерства сохранён')
   } catch (err) {
     emit(
       'error',
 
-      err instanceof Error ? err.message : 'Не удалось сохранить бонус мастерства.',
+      err instanceof Error ? err.message : 'Не удалось сохранить бонус мастерства',
     )
   } finally {
     saving.value = false

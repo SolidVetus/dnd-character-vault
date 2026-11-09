@@ -6,17 +6,19 @@ import type { AbilityId, Character, CharacterSkill } from '@/types/character'
 export const useCharacterStore = defineStore('character', () => {
   const character = ref<Character | null>(null)
   const loading = ref(false)
-  const error = ref('')
+  const loadError = ref('')
 
   async function loadCharacter(id: string) {
     loading.value = true
-    error.value = ''
+    loadError.value = ''
     character.value = null
 
     try {
       character.value = await getCharacter(id)
-    } catch {
-      error.value = 'Не удалось загрузить персонажа. Проверь, запущен ли API.'
+      return true
+    } catch (err) {
+      loadError.value = err instanceof Error ? err.message : 'Не удалось загрузить персонажа'
+      return false
     } finally {
       loading.value = false
     }
@@ -31,7 +33,7 @@ export const useCharacterStore = defineStore('character', () => {
   function clearCharacter() {
     character.value = null
     loading.value = false
-    error.value = ''
+    loadError.value = ''
   }
 
   function updateAbilities(ability: AbilityId, value: { score: number; mod: number }) {
@@ -63,7 +65,7 @@ export const useCharacterStore = defineStore('character', () => {
   return {
     character,
     loading,
-    error,
+    loadError,
     loadCharacter,
     updateCharacter,
     clearCharacter,

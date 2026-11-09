@@ -38,7 +38,7 @@ export async function uploadCharacterAvatar(
     })
   } catch (error: unknown) {
     if (error instanceof Error && error.message.includes('413')) {
-      throw new Error('Изображение слишком большое. Максимальный размер — 5 МиБ.')
+      throw new Error('Изображение слишком большое. Максимальный размер — 5 MB')
     }
 
     throw error

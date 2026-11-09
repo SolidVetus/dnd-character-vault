@@ -47,7 +47,7 @@ async function saveSkill(skill: CharacterSkill) {
     emit('updated', updatedSkill)
     emit('saved', `Навык «${updatedSkill.name}»: изменения сохранены.`)
   } catch (err) {
-    emit('error', err instanceof Error ? err.message : 'Не удалось сохранить навык.')
+    emit('error', err instanceof Error ? err.message : 'Не удалось сохранить навык')
   } finally {
     savingSkill.value = null
   }

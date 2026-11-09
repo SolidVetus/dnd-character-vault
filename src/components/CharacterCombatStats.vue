@@ -71,12 +71,9 @@ async function saveCombat() {
     Object.assign(form.deathSaves, combat.deathSaves)
 
     emit('updated', combat)
-    emit('saved', 'Боевые характеристики сохранены.')
+    emit('saved', 'Боевые характеристики сохранены')
   } catch (err) {
-    emit(
-      'error',
-      err instanceof Error ? err.message : 'Не удалось сохранить боевые характеристики.',
-    )
+    emit('error', err instanceof Error ? err.message : 'Не удалось сохранить боевые характеристики')
   } finally {
     savingCombat.value = false
   }
@@ -91,9 +88,9 @@ async function saveHp() {
     Object.assign(form.hp, hp)
 
     emitUpdatedCombat()
-    emit('saved', 'Хиты сохранены.')
+    emit('saved', 'Хиты сохранены')
   } catch (err) {
-    emit('error', err instanceof Error ? err.message : 'Не удалось сохранить хиты.')
+    emit('error', err instanceof Error ? err.message : 'Не удалось сохранить хиты')
   } finally {
     savingHp.value = false
   }
@@ -110,9 +107,9 @@ async function saveDeathSaves() {
     Object.assign(form.deathSaves, deathSaves)
 
     emitUpdatedCombat()
-    emit('saved', 'Спасброски от смерти сохранены.')
+    emit('saved', 'Спасброски от смерти сохранены')
   } catch (err) {
-    emit('error', err instanceof Error ? err.message : 'Не удалось сохранить спасброски от смерти.')
+    emit('error', err instanceof Error ? err.message : 'Не удалось сохранить спасброски от смерти')
   } finally {
     savingDeathSaves.value = false
   }

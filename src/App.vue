@@ -2,13 +2,14 @@
 import { computed, ref } from 'vue'
 import { RouterView, useRoute, useRouter } from 'vue-router'
 import { createCharacter } from '@/api/characters'
+import { useNotificationStore } from '@/stores/notification'
 
 const route = useRoute()
 const router = useRouter()
+const notifications = useNotificationStore()
 
 const isDarkTheme = ref(localStorage.getItem('theme') === 'dark')
 const isCreatingCharacter = ref(false)
-const error = ref('')
 
 const isCharacterPage = computed(() => route.name === 'character')
 
@@ -25,7 +26,6 @@ function toggleTheme() {
 async function handleCreateCharacter() {
   if (isCreatingCharacter.value) return
 
-  error.value = ''
   isCreatingCharacter.value = true
 
   try {
@@ -36,7 +36,7 @@ async function handleCreateCharacter() {
       params: { id: newCharacter.id },
     })
   } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Не удалось создать персонажа'
+    notifications.notifyError(err instanceof Error ? err.message : 'Не удалось создать персонажа')
   } finally {
     isCreatingCharacter.value = false
   }
@@ -86,13 +86,18 @@ async function handleCreateCharacter() {
 
     <v-main>
       <v-container class="home-page">
-        <v-alert v-if="error" type="error" variant="tonal" class="mb-4">
-          {{ error }}
-        </v-alert>
-
         <RouterView />
       </v-container>
     </v-main>
+
+    <v-snackbar-queue
+      v-model="notifications.queue"
+      location="top center"
+      :total-visible="3"
+      :timeout="5000"
+      closable
+      close-text="Закрыть"
+    />
   </v-app>
 </template>
 

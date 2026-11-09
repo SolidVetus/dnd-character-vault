@@ -14,6 +14,8 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:attacks': [attacks: CharacterAttack[]]
+  saved: [message: string]
+  error: [message: string]
 }>()
 
 const newAttackName = ref('')
@@ -22,10 +24,8 @@ const newAttackDamage = ref('')
 
 const isAdding = ref(false)
 const isAddFormVisible = ref(false)
-const errorMessage = ref('')
 
 function handleShowAddForm() {
-  errorMessage.value = ''
   isAddFormVisible.value = true
 }
 
@@ -34,7 +34,6 @@ function handleCancelAddForm() {
   newAttackName.value = ''
   newAttackBonus.value = null
   newAttackDamage.value = ''
-  errorMessage.value = ''
 }
 
 function updateAttackDraft(
@@ -65,12 +64,11 @@ async function handleAddAttack() {
   if (isAdding.value) return
 
   if (!name || !damage || !bonus) {
-    errorMessage.value = 'Заполни все поля.'
+    emit('error', 'Заполни все поля')
     return
   }
 
   isAdding.value = true
-  errorMessage.value = ''
 
   try {
     const createdAttack = await createCharacterAttack(props.characterId, {
@@ -81,9 +79,10 @@ async function handleAddAttack() {
     })
 
     emit('update:attacks', [...props.attacks, createdAttack])
+    emit('saved', `Атака «${createdAttack.name}» добавлена`)
     handleCancelAddForm()
-  } catch {
-    errorMessage.value = 'Не удалось сохранить атаку.'
+  } catch (err) {
+    emit('error', err instanceof Error ? err.message : 'Не удалось сохранить атаку')
   } finally {
     isAdding.value = false
   }
@@ -95,11 +94,9 @@ async function saveEditedAttack(attackId: string) {
   if (!attack) return
 
   if (!attack.name.trim() || !attack.damage.trim()) {
-    errorMessage.value = 'Название и урон не должны быть пустыми.'
+    emit('error', 'Название и урон не должны быть пустыми')
     return
   }
-
-  errorMessage.value = ''
 
   try {
     const updatedAttack = await updateCharacterAttack(props.characterId, attack.id, {
@@ -112,15 +109,14 @@ async function saveEditedAttack(attackId: string) {
       'update:attacks',
       props.attacks.map((item) => (item.id === updatedAttack.id ? updatedAttack : item)),
     )
-  } catch {
-    errorMessage.value = 'Не удалось сохранить изменения атаки.'
+    emit('saved', `Атака «${updatedAttack.name}» сохранена`)
+  } catch (err) {
+    emit('error', err instanceof Error ? err.message : 'Не удалось сохранить изменения атаки')
   }
 }
 
 async function removeAttack(attack: CharacterAttack) {
   if (!window.confirm(`Удалить атаку «${attack.name}»?`)) return
-
-  errorMessage.value = ''
 
   try {
     await deleteCharacterAttack(props.characterId, attack.id)
@@ -129,8 +125,9 @@ async function removeAttack(attack: CharacterAttack) {
       'update:attacks',
       props.attacks.filter((item) => item.id !== attack.id),
     )
-  } catch {
-    errorMessage.value = 'Не удалось удалить атаку.'
+    emit('saved', `Атака «${attack.name}» удалена`)
+  } catch (err) {
+    emit('error', err instanceof Error ? err.message : 'Не удалось удалить атаку')
   }
 }
 </script>
@@ -265,15 +262,6 @@ async function removeAttack(attack: CharacterAttack) {
           </div>
         </v-form>
 
-        <v-alert
-          v-if="errorMessage"
-          type="error"
-          variant="tonal"
-          density="compact"
-          class="error-message"
-        >
-          {{ errorMessage }}
-        </v-alert>
       </v-card-text>
     </v-card>
   </section>
@@ -505,15 +493,6 @@ async function removeAttack(attack: CharacterAttack) {
   padding: 16px 12px;
   color: var(--text-muted);
   text-align: center;
-}
-
-.error-message {
-  margin: 0;
-  padding: 10px 12px;
-  border: 1px solid var(--delete-border);
-  border-radius: 7px;
-  background: var(--delete-background);
-  color: var(--delete-text);
 }
 
 @media (max-width: 650px) {

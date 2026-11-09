@@ -15,12 +15,13 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   updated: [features: CharacterFeature[]]
+  saved: [message: string]
+  error: [message: string]
 }>()
 
 const isAdding = ref(false)
 const editingId = ref<string | null>(null)
 const isSaving = ref(false)
-const errorMessage = ref('')
 
 const newFeature = ref({ name: '', description: '' })
 const editedFeature = ref({ name: '', description: '' })
@@ -29,7 +30,6 @@ function startAdding() {
   newFeature.value = { name: '', description: '' }
   isAdding.value = true
   editingId.value = null
-  errorMessage.value = ''
 }
 
 function startEditing(feature: CharacterFeature) {
@@ -39,19 +39,17 @@ function startEditing(feature: CharacterFeature) {
   }
   editingId.value = feature.id
   isAdding.value = false
-  errorMessage.value = ''
 }
 
 async function addFeature() {
   const name = newFeature.value.name.trim()
 
   if (!name) {
-    errorMessage.value = 'Укажите название умения.'
+    emit('error', 'Укажите название умения')
     return
   }
 
   isSaving.value = true
-  errorMessage.value = ''
 
   try {
     const feature = await createCharacterFeature(props.characterId, {
@@ -60,9 +58,10 @@ async function addFeature() {
     })
 
     emit('updated', [...props.features, feature])
+    emit('saved', `Умение «${feature.name}» добавлено`)
     isAdding.value = false
-  } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : 'Не удалось добавить умение.'
+  } catch (err) {
+    emit('error', err instanceof Error ? err.message : 'Не удалось добавить умение')
   } finally {
     isSaving.value = false
   }
@@ -72,12 +71,11 @@ async function saveFeature(feature: CharacterFeature) {
   const name = editedFeature.value.name.trim()
 
   if (!name) {
-    errorMessage.value = 'Укажите название умения.'
+    emit('error', 'Укажите название умения')
     return
   }
 
   isSaving.value = true
-  errorMessage.value = ''
 
   try {
     const updatedFeature = await updateCharacterFeature(props.characterId, feature.id, {
@@ -90,9 +88,10 @@ async function saveFeature(feature: CharacterFeature) {
       props.features.map((item) => (item.id === updatedFeature.id ? updatedFeature : item)),
     )
 
+    emit('saved', `Умение «${updatedFeature.name}» сохранено`)
     editingId.value = null
-  } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : 'Не удалось сохранить умение.'
+  } catch (err) {
+    emit('error', err instanceof Error ? err.message : 'Не удалось сохранить умение')
   } finally {
     isSaving.value = false
   }
@@ -102,7 +101,6 @@ async function removeFeature(feature: CharacterFeature) {
   if (!window.confirm(`Удалить умение «${feature.name}»?`)) return
 
   isSaving.value = true
-  errorMessage.value = ''
 
   try {
     await deleteCharacterFeature(props.characterId, feature.id)
@@ -111,8 +109,9 @@ async function removeFeature(feature: CharacterFeature) {
       'updated',
       props.features.filter((item) => item.id !== feature.id),
     )
-  } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : 'Не удалось удалить умение.'
+    emit('saved', `Умение «${feature.name}» удалено`)
+  } catch (err) {
+    emit('error', err instanceof Error ? err.message : 'Не удалось удалить умение')
   } finally {
     isSaving.value = false
   }
@@ -126,10 +125,6 @@ async function removeFeature(feature: CharacterFeature) {
     </header>
 
     <div class="features-container">
-      <p v-if="errorMessage" class="error-message" role="alert">
-        {{ errorMessage }}
-      </p>
-
       <form v-if="isAdding" class="feature-form" @submit.prevent="addFeature">
         <label>
           Название
@@ -485,17 +480,6 @@ async function removeFeature(feature: CharacterFeature) {
   background: var(--page-surface);
   color: var(--text-muted);
   text-align: center;
-}
-
-.error-message {
-  margin: 0;
-  padding: 0.75rem 1rem;
-  border: 1px solid var(--delete-border);
-  border-radius: 8px;
-  background: var(--delete-background);
-  color: var(--delete-text);
-  font-size: 0.9rem;
-  line-height: 1.5;
 }
 
 @media (max-width: 480px) {

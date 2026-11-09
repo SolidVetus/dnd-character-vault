@@ -29,7 +29,7 @@ async function savePassivePerception() {
   if (saving.value) return
 
   if (!Number.isInteger(value.value) || value.value < 0 || value.value > 99) {
-    emit('error', 'Пассивная внимательность должна быть целым числом от 0 до 99.')
+    emit('error', 'Пассивная внимательность должна быть целым числом от 0 до 99')
     return
   }
 
@@ -40,11 +40,11 @@ async function savePassivePerception() {
 
     value.value = result.value
     emit('updated', result.value)
-    emit('saved', 'Пассивная внимательность сохранена.')
+    emit('saved', 'Пассивная внимательность сохранена')
   } catch (err) {
     emit(
       'error',
-      err instanceof Error ? err.message : 'Не удалось сохранить пассивную внимательность.',
+      err instanceof Error ? err.message : 'Не удалось сохранить пассивную внимательность',
     )
   } finally {
     saving.value = false

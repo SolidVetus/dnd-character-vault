@@ -38,9 +38,9 @@ async function saveProficienciesAndLanguages() {
 
     text.value = result.join('\n')
     emit('updated', result)
-    emit('saved', 'Владения и языки сохранены.')
+    emit('saved', 'Владения и языки сохранены')
   } catch (err) {
-    emit('error', err instanceof Error ? err.message : 'Не удалось сохранить владения и языки.')
+    emit('error', err instanceof Error ? err.message : 'Не удалось сохранить владения и языки')
   } finally {
     saving.value = false
   }

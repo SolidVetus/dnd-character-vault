@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useCharacterStore } from '@/stores/useCharacterStore'
+import { useNotificationStore } from '@/stores/notification.ts'
 
 import CharacterIdentity from './CharacterIdentity.vue'
 import CharacterAbilities from './CharacterAbilities.vue'
@@ -24,25 +25,32 @@ interface Props {
 const props = defineProps<Props>()
 
 const characterStore = useCharacterStore()
+const notifications = useNotificationStore()
 
-const { character, loading, error } = storeToRefs(characterStore)
+const { character, loading, loadError } = storeToRefs(characterStore)
 
-const saveMessage = ref('')
+async function loadCharacter(id: string) {
+  const loaded = await characterStore.loadCharacter(id)
+
+  if (!loaded) {
+    notifications.notifyError(loadError.value || 'Не удалось загрузить персонажа')
+  }
+}
 
 watch(
   () => props.characterId,
   (id) => {
-    void characterStore.loadCharacter(id)
+    void loadCharacter(id)
   },
   { immediate: true },
 )
 
 function handleSaved(message: string) {
-  saveMessage.value = message
+  notifications.notifySuccess(message)
 }
 
 function handleError(message: string) {
-  error.value = message
+  notifications.notifyError(message)
 }
 </script>
 
@@ -53,9 +61,10 @@ function handleError(message: string) {
       <p>Загружаем персонажа...</p>
     </div>
 
-    <v-alert v-else-if="error" type="error" class="mb-4">
-      {{ error }}
-    </v-alert>
+    <div v-else-if="loadError" class="character-sheet__load-error">
+      <p>Лист персонажа не загрузился. Попробуй ещё раз.</p>
+      <v-btn @click="loadCharacter(props.characterId)">Повторить</v-btn>
+    </div>
 
     <template v-else-if="character">
       <header class="character-sheet__header">
@@ -86,6 +95,8 @@ function handleError(message: string) {
             :character-id="character.id"
             :abilities="character.abilities"
             @updated="(ability, value) => characterStore.updateAbilities(ability, value)"
+            @saved="handleSaved"
+            @error="handleError"
           />
         </div>
 
@@ -152,6 +163,8 @@ function handleError(message: string) {
             :character-id="character.id"
             :attacks="character.attacks"
             @update:attacks="characterStore.updateCharacter('attacks', $event)"
+            @saved="handleSaved"
+            @error="handleError"
           />
 
           <CharacterEquipment
@@ -176,13 +189,11 @@ function handleError(message: string) {
             :character-id="character.id"
             :features="character.features"
             @updated="characterStore.updateCharacter('features', $event)"
+            @saved="handleSaved"
+            @error="handleError"
           />
         </div>
       </div>
-
-      <v-snackbar v-if="saveMessage" timeout="2500">
-        {{ saveMessage }}
-      </v-snackbar>
     </template>
   </v-container>
 </template>
@@ -201,6 +212,14 @@ function handleError(message: string) {
   justify-items: center;
   gap: 12px;
   padding: 48px 16px;
+  color: var(--text-muted);
+}
+
+.character-sheet__load-error {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 32px 16px;
   color: var(--text-muted);
 }
 

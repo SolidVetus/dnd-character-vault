@@ -36,10 +36,10 @@ async function saveInspiration(value: boolean) {
     const result = await updateInspiration(props.characterId, value)
     inspiration.value = result.value
     emit('updated', result.value)
-    emit('saved', 'Вдохновение сохранено.')
+    emit('saved', 'Вдохновение сохранено')
   } catch (err) {
     inspiration.value = previousValue
-    emit('error', err instanceof Error ? err.message : 'Не удалось сохранить вдохновение.')
+    emit('error', err instanceof Error ? err.message : 'Не удалось сохранить вдохновение')
   } finally {
     saving.value = false
   }

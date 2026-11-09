@@ -36,7 +36,6 @@ const form = reactive({
 const saving = ref(false)
 
 const avatarBusy = ref(false)
-const avatarError = ref('')
 const avatarInput = ref<HTMLInputElement | null>(null)
 
 const avatarUrl = computed(() => getAvatarUrl(props.identity.avatarUrl))
@@ -54,13 +53,11 @@ async function onAvatarSelected(event: Event) {
   if (!file) return
 
   if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
-    avatarError.value = 'Допустимы только изображения PNG, JPEG и WebP.'
-    emit('error', avatarError.value)
+    emit('error', 'Допустимы только изображения PNG, JPEG и WebP')
     return
   }
 
   avatarBusy.value = true
-  avatarError.value = ''
 
   try {
     const result = await uploadCharacterAvatar(props.characterId, file)
@@ -69,12 +66,9 @@ async function onAvatarSelected(event: Event) {
       ...props.identity,
       avatarUrl: result.avatarUrl,
     })
-
-    emit('saved', 'Аватар загружен.')
+    emit('saved', 'Аватар загружен')
   } catch (err) {
-    avatarError.value = err instanceof Error ? err.message : 'Не удалось загрузить аватар.'
-
-    emit('error', avatarError.value)
+    emit('error', err instanceof Error ? err.message : 'Не удалось загрузить аватар')
   } finally {
     avatarBusy.value = false
   }
@@ -84,7 +78,6 @@ async function removeAvatar() {
   if (!props.identity.avatarUrl || avatarBusy.value) return
 
   avatarBusy.value = true
-  avatarError.value = ''
 
   try {
     await deleteCharacterAvatar(props.characterId)
@@ -94,11 +87,9 @@ async function removeAvatar() {
       avatarUrl: null,
     })
 
-    emit('saved', 'Аватар удалён.')
+    emit('saved', 'Аватар удалён')
   } catch (err) {
-    avatarError.value = err instanceof Error ? err.message : 'Не удалось удалить аватар.'
-
-    emit('error', avatarError.value)
+    emit('error', err instanceof Error ? err.message : 'Не удалось удалить аватар')
   } finally {
     avatarBusy.value = false
   }
@@ -121,10 +112,7 @@ watch(
 )
 
 async function saveIdentity() {
-  if (!form.characterName.trim()) {
-    emit('error', 'Укажите имя персонажа.')
-    return
-  }
+  if (!form.characterName.trim()) return
 
   saving.value = true
 
@@ -142,9 +130,9 @@ async function saveIdentity() {
 
     Object.assign(form, identity)
     emit('updated', identity)
-    emit('saved', 'Изменения сохранены.')
+    emit('saved', 'Изменения сохранены')
   } catch (err) {
-    emit('error', err instanceof Error ? err.message : 'Не удалось сохранить изменения.')
+    emit('error', err instanceof Error ? err.message : 'Не удалось сохранить изменения')
   } finally {
     saving.value = false
   }
@@ -158,10 +146,6 @@ async function saveIdentity() {
     </div>
     <v-card width="100%" class="character-identity">
       <v-card-text class="section-content">
-        <v-alert v-if="avatarError" type="error" variant="tonal" density="compact" class="mb-4">
-          {{ avatarError }}
-        </v-alert>
-
         <v-row align="start">
           <v-col cols="12" md="8">
             <v-row>
@@ -452,16 +436,6 @@ async function saveIdentity() {
 .avatar-section :deep(.text-caption) {
   color: var(--text-muted);
   line-height: 1.6;
-}
-
-.character-identity :deep(.v-alert) {
-  border-color: var(--delete-border);
-  background: var(--delete-background);
-  color: var(--delete-text);
-}
-
-.character-identity :deep(.v-alert__content) {
-  color: var(--delete-text);
 }
 
 .character-identity :deep(.v-btn--variant-text.text-error) {
