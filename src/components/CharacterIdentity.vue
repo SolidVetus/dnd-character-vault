@@ -1,13 +1,8 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import type { Character } from '@/types/character'
 import { getAvatarUrl } from '@/utils/avatar'
-
-import {
-  uploadCharacterAvatar,
-  deleteCharacterAvatar,
-  updateCharacterIdentity,
-} from '@/api/character/identity'
+import CharacterIdentityDialog from './modal/CharacterIdentityDialog.vue'
 
 interface Props {
   characterId: string
@@ -22,269 +17,177 @@ const emit = defineEmits<{
   error: [message: string]
 }>()
 
-const form = reactive({
-  characterName: props.identity.characterName,
-  playerName: props.identity.playerName,
-  classLevel: props.identity.classLevel,
-  race: props.identity.race,
-  background: props.identity.background,
-  alignment: props.identity.alignment,
-  experiencePoints: props.identity.experiencePoints,
-  age: props.identity.age,
-})
-
-const saving = ref(false)
-
-const avatarBusy = ref(false)
-const avatarInput = ref<HTMLInputElement | null>(null)
-
+const dialogOpen = ref(false)
 const avatarUrl = computed(() => getAvatarUrl(props.identity.avatarUrl))
-
-function openAvatarPicker() {
-  avatarInput.value?.click()
-}
-
-async function onAvatarSelected(event: Event) {
-  const input = event.target as HTMLInputElement
-  const file = input.files?.[0]
-
-  input.value = ''
-
-  if (!file) return
-
-  if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
-    emit('error', 'Допустимы только изображения PNG, JPEG и WebP')
-    return
-  }
-
-  avatarBusy.value = true
-
-  try {
-    const result = await uploadCharacterAvatar(props.characterId, file)
-
-    emit('updated', {
-      ...props.identity,
-      avatarUrl: result.avatarUrl,
-    })
-    emit('saved', 'Аватар загружен')
-  } catch (err) {
-    emit('error', err instanceof Error ? err.message : 'Не удалось загрузить аватар')
-  } finally {
-    avatarBusy.value = false
-  }
-}
-
-async function removeAvatar() {
-  if (!props.identity.avatarUrl || avatarBusy.value) return
-
-  avatarBusy.value = true
-
-  try {
-    await deleteCharacterAvatar(props.characterId)
-
-    emit('updated', {
-      ...props.identity,
-      avatarUrl: null,
-    })
-
-    emit('saved', 'Аватар удалён')
-  } catch (err) {
-    emit('error', err instanceof Error ? err.message : 'Не удалось удалить аватар')
-  } finally {
-    avatarBusy.value = false
-  }
-}
-
-watch(
-  () => props.identity,
-  (identity) => {
-    Object.assign(form, {
-      characterName: identity.characterName,
-      playerName: identity.playerName,
-      classLevel: identity.classLevel,
-      race: identity.race,
-      background: identity.background,
-      alignment: identity.alignment,
-      experiencePoints: identity.experiencePoints,
-      age: identity.age,
-    })
-  },
-)
-
-async function saveIdentity() {
-  if (!form.characterName.trim()) return
-
-  saving.value = true
-
-  try {
-    const identity = await updateCharacterIdentity(props.characterId, {
-      characterName: form.characterName.trim(),
-      playerName: form.playerName,
-      classLevel: form.classLevel,
-      race: form.race,
-      background: form.background,
-      alignment: form.alignment,
-      experiencePoints: form.experiencePoints,
-      age: form.age,
-    })
-
-    Object.assign(form, identity)
-    emit('updated', identity)
-    emit('saved', 'Изменения сохранены')
-  } catch (err) {
-    emit('error', err instanceof Error ? err.message : 'Не удалось сохранить изменения')
-  } finally {
-    saving.value = false
-  }
-}
+const identityDetails = computed(() => [
+  { label: 'Игрок', value: props.identity.playerName },
+  { label: 'Класс и уровень', value: props.identity.classLevel },
+  { label: 'Раса', value: props.identity.race },
+  { label: 'Предыстория', value: props.identity.background },
+  { label: 'Мировоззрение', value: props.identity.alignment },
+  { label: 'Опыт', value: props.identity.experiencePoints.toLocaleString('ru-RU') },
+  { label: 'Возраст', value: props.identity.age === null ? '' : String(props.identity.age) },
+])
 </script>
 
 <template>
-  <v-form @submit.prevent="saveIdentity">
+  <section class="identity-section">
     <div class="section-header">
       <h2>Основная информация</h2>
     </div>
+
     <v-card width="100%" class="character-identity">
       <v-card-text class="section-content">
-        <v-row align="start">
-          <v-col cols="12" md="8">
-            <v-row>
-              <v-col cols="12" sm="6">
-                <v-text-field
-                  v-model="form.characterName"
-                  class="identity-field"
-                  label="Имя персонажа"
-                  :rules="[(value: string) => !!value?.trim() || 'Укажите имя персонажа']"
-                  required
-                />
-              </v-col>
-
-              <v-col cols="12" sm="6">
-                <v-text-field v-model="form.playerName" class="identity-field" label="Имя игрока" />
-              </v-col>
-
-              <v-col cols="12" sm="6">
-                <v-text-field
-                  v-model="form.classLevel"
-                  class="identity-field"
-                  label="Класс и уровень"
-                />
-              </v-col>
-
-              <v-col cols="12" sm="6">
-                <v-text-field v-model="form.race" class="identity-field" label="Раса" />
-              </v-col>
-
-              <v-col cols="12" sm="6">
-                <v-text-field
-                  v-model="form.background"
-                  class="identity-field"
-                  label="Предыстория"
-                />
-              </v-col>
-
-              <v-col cols="12" sm="6">
-                <v-text-field
-                  v-model="form.alignment"
-                  class="identity-field"
-                  label="Мировоззрение"
-                />
-              </v-col>
-
-              <v-col cols="12" sm="6">
-                <v-text-field
-                  v-model.number="form.experiencePoints"
-                  label="Опыт"
-                  class="identity-field"
-                  type="number"
-                  min="0"
-                  max="9999999"
-                />
-              </v-col>
-
-              <v-col cols="12" sm="6">
-                <v-text-field
-                  v-model.number="form.age"
-                  label="Возраст"
-                  class="identity-field"
-                  type="number"
-                  min="0"
-                  max="9999"
-                  clearable
-                />
-              </v-col>
-            </v-row>
-          </v-col>
-
-          <v-col cols="12" md="4">
-            <div class="avatar-section">
-              <div class="character-avatar mb-2">
-                <v-img
-                  v-if="avatarUrl"
-                  :src="avatarUrl"
-                  alt="Аватар персонажа"
-                  contain
-                  width="100%"
-                  height="100%"
-                />
-                <v-icon v-else icon="mdi-account-circle" size="220" />
+        <div class="identity-summary">
+          <div class="identity-summary__body">
+            <h3 class="identity-summary__name">
+              {{ props.identity.characterName || 'Имя не указано' }}
+            </h3>
+            <dl class="identity-summary__details">
+              <div v-for="detail in identityDetails" :key="detail.label">
+                <dt>{{ detail.label }}</dt>
+                <dd>{{ detail.value || '—' }}</dd>
               </div>
+            </dl>
+          </div>
 
-              <input
-                ref="avatarInput"
-                type="file"
-                accept="image/png,image/jpeg,image/webp"
-                class="d-none"
-                :disabled="avatarBusy"
-                @change="onAvatarSelected"
-              />
-
-              <v-btn
-                class="avatar-upload-btn"
-                :loading="avatarBusy"
-                :disabled="avatarBusy"
-                @click="openAvatarPicker"
-              >
-                {{ props.identity.avatarUrl ? 'Заменить аватар' : 'Загрузить аватар' }}
-              </v-btn>
-
-              <v-btn
-                v-if="props.identity.avatarUrl"
-                color="error"
-                variant="text"
-                :loading="avatarBusy"
-                :disabled="avatarBusy"
-                @click="removeAvatar"
-              >
-                Удалить аватар
-              </v-btn>
-
-              <div class="text-caption text-medium-emphasis">
-                PNG, JPEG или WebP.<br />
-                Максимальный размер — 5mb.
-              </div>
-            </div>
-          </v-col>
-        </v-row>
-        <v-card-actions class="section-actions">
-          <v-spacer />
-          <v-btn class="save-identity-btn" type="submit" :loading="saving" :disabled="saving">
-            Сохранить изменения
-          </v-btn>
-        </v-card-actions>
+          <div class="character-avatar character-avatar--summary">
+            <v-img
+              v-if="avatarUrl"
+              :src="avatarUrl"
+              alt="Аватар персонажа"
+              contain
+              width="100%"
+              height="100%"
+            />
+            <v-icon v-else icon="mdi-account-circle" size="220" />
+          </div>
+        </div>
       </v-card-text>
+      <v-card-actions class="identity-summary__actions">
+        <v-btn class="edit-identity-btn" prepend-icon="mdi-pencil" @click="dialogOpen = true">
+          Редактировать
+        </v-btn>
+      </v-card-actions>
     </v-card>
-  </v-form>
+
+    <CharacterIdentityDialog
+      v-model="dialogOpen"
+      :character-id="props.characterId"
+      :identity="props.identity"
+      @updated="emit('updated', $event)"
+      @saved="emit('saved', $event)"
+      @error="emit('error', $event)"
+    />
+  </section>
 </template>
 
 <style scoped>
 .character-identity {
+  container: identity-card / inline-size;
   overflow: hidden;
   border: 1px solid var(--border-color);
   border-radius: 10px;
   background: var(--page-surface);
   color: var(--text-color);
   box-shadow: none;
+}
+
+.identity-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 240px;
+  align-items: start;
+  gap: 12px;
+}
+
+.identity-summary__body {
+  min-width: 0;
+}
+
+.identity-summary__name {
+  margin: 0 0 16px;
+  color: var(--heading-color);
+  font-size: 1.5rem;
+  font-weight: 750;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.identity-summary__details {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(150px, 1fr));
+  gap: 18px;
+  margin: 0;
+}
+
+.identity-summary__details > div {
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--page-background);
+}
+
+.identity-summary__details dt {
+  margin-bottom: 4px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  line-height: 1.3;
+}
+
+.identity-summary__details dd {
+  margin: 0;
+  color: var(--text-color);
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.character-avatar {
+  display: flex;
+  align-self: flex-end;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 280px;
+  height: 280px;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--image-background);
+  color: var(--text-muted);
+}
+
+.character-avatar :deep(.v-img) {
+  width: 100%;
+  height: 100%;
+}
+
+.character-avatar :deep(.v-icon) {
+  color: var(--text-muted);
+}
+
+.character-avatar--summary {
+  flex: 0 0 240px;
+  width: 240px;
+  max-width: 240px;
+  height: 240px;
+}
+
+.identity-summary__actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 16px 16px;
+}
+
+.edit-identity-btn {
+  flex: 0 0 auto;
+  border: 1px solid var(--button-border);
+  border-radius: 8px;
+  background: var(--button-background) !important;
+  color: var(--button-text) !important;
 }
 
 .section-header {
@@ -314,136 +217,37 @@ async function saveIdentity() {
   color: var(--text-color);
 }
 
-.identity-field :deep(.v-field) {
-  min-height: 64px;
-  border-radius: 8px;
-  background: var(--page-background);
-  color: var(--text-color);
-}
-
-.identity-field :deep(.v-field__input) {
-  min-height: 64px;
-  padding-top: 22px;
-  padding-bottom: 12px;
-  color: var(--text-color);
-  font-size: 1.05rem;
-}
-
-.identity-field :deep(.v-field-label) {
-  transform: translateY(-4px);
-  color: var(--text-muted);
-}
-
-.identity-field :deep(.v-field__outline) {
-  color: var(--border-color);
-}
-
-.identity-field :deep(.v-field--focused .v-field__outline) {
-  color: var(--accent-color);
-}
-
-.identity-field :deep(.v-label),
-.identity-field :deep(input),
-.identity-field :deep(textarea) {
-  color: var(--text-color);
-  opacity: 1;
-}
-
-.identity-field :deep(input::placeholder),
-.identity-field :deep(textarea::placeholder) {
-  color: var(--text-muted);
-  opacity: 1;
-}
-
-.identity-field :deep(.v-field--disabled) {
-  opacity: 0.6;
-}
-
-.avatar-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  color: var(--text-color);
-  text-align: center;
-}
-
-.character-avatar {
-  display: flex;
-  box-sizing: border-box;
-  width: 100%;
-  max-width: 280px;
-  height: 280px;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  background: var(--image-background);
-  color: var(--text-muted);
-}
-
-.character-avatar :deep(.v-img) {
-  width: 100%;
-  height: 100%;
-}
-
-.character-avatar :deep(.v-icon) {
-  color: var(--text-muted);
-}
-
-.avatar-upload-btn,
-.save-identity-btn {
-  border: 1px solid var(--button-border);
-  border-radius: 8px;
-  background: var(--button-background) !important;
-  color: var(--button-text) !important;
-  transition:
-    background-color 0.2s ease,
-    border-color 0.2s ease;
-}
-
-.avatar-upload-btn {
-  width: 100%;
-  max-width: 280px;
-}
-
-.save-identity-btn {
-  min-width: 200px;
-}
-
-.avatar-upload-btn:hover:not(:disabled),
-.save-identity-btn:hover:not(:disabled) {
-  border-color: var(--button-hover-border);
-  background: var(--button-hover-background) !important;
-}
-
-.avatar-upload-btn:focus-visible,
-.save-identity-btn:focus-visible {
+.edit-identity-btn:focus-visible {
   outline: 2px solid var(--accent-color);
   outline-offset: 3px;
 }
 
-.avatar-upload-btn:disabled,
-.save-identity-btn:disabled {
-  opacity: 0.6;
+@media (max-width: 960px) {
+  .identity-summary__details {
+    grid-template-columns: repeat(2, minmax(150px, 1fr));
+  }
+  .character-avatar {
+    align-self: center;
+  }
 }
 
-.section-actions {
-  padding-top: 16px;
-}
+@container identity-card (max-width: 600px) {
+  .identity-summary {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
 
-.avatar-section :deep(.text-caption) {
-  color: var(--text-muted);
-  line-height: 1.6;
-}
+  .identity-summary__details {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+  }
 
-.character-identity :deep(.v-btn--variant-text.text-error) {
-  color: var(--delete-text) !important;
-}
+  .character-avatar--summary {
+    justify-self: center;
+  }
 
-.character-identity :deep(.v-btn--variant-text.text-error:hover) {
-  background: var(--delete-hover-background);
+  .identity-summary__actions {
+    justify-content: center;
+  }
 }
 
 @media (max-width: 600px) {
@@ -451,18 +255,29 @@ async function saveIdentity() {
     padding: 12px;
   }
 
-  .character-avatar {
-    max-width: 240px;
-    height: 240px;
+  .identity-summary__name {
+    margin-bottom: 12px;
+    font-size: 1.25rem;
   }
 
-  .avatar-upload-btn {
-    max-width: 240px;
+  .identity-summary__details > div {
+    padding: 9px 10px;
   }
 
-  .save-identity-btn {
+  .identity-summary__details dt {
+    font-size: 0.85rem;
+  }
+
+  .identity-summary__details dd {
+    font-size: 1rem;
+  }
+
+  .identity-summary__body {
     width: 100%;
-    min-width: 0;
+  }
+
+  .identity-summary__actions {
+    padding: 0 12px 12px;
   }
 }
 </style>
