@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { useTemplateRef, ref, watch } from 'vue'
 import { updateInspiration } from '../api/character/abilities'
+import { sparkles } from 'party-js'
 
 interface Props {
   characterId: string
@@ -35,6 +36,10 @@ async function saveInspiration(value: boolean) {
   try {
     const result = await updateInspiration(props.characterId, value)
     inspiration.value = result.value
+
+    if (result.value && !previousValue) {
+      playSparkles()
+    }
     emit('updated', result.value)
     emit('saved', 'Вдохновение сохранено')
   } catch (err) {
@@ -49,6 +54,14 @@ function toggleInspiration() {
   if (saving.value) return
   saveInspiration(!inspiration.value)
 }
+
+const inspirationButton = useTemplateRef('inspirationButton')
+
+function playSparkles() {
+  const button = inspirationButton.value
+  if (!button || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+  sparkles(button)
+}
 </script>
 
 <template>
@@ -59,6 +72,7 @@ function toggleInspiration() {
       <div class="inspiration__content">
         <button
           type="button"
+          ref="inspirationButton"
           class="inspiration-toggle"
           :class="{ 'inspiration-toggle--active': inspiration }"
           role="switch"
