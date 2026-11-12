@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { reactive, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import type { AbilityId, Character } from '@/types/character'
-import { updateCharacterAbility } from '../api/character/abilities'
+import CharacterAbilitiesDialog from './modal/CharacterAbilitiesDialog.vue'
 
 interface Props {
   characterId: string
@@ -25,54 +25,17 @@ const abilityNames: Record<AbilityId, string> = {
   cha: 'Харизма',
 }
 
-const abilityForms = reactive<Record<AbilityId, { score: number; mod: number }>>({
-  str: { score: 10, mod: 0 },
-  dex: { score: 10, mod: 0 },
-  con: { score: 10, mod: 0 },
-  int: { score: 10, mod: 0 },
-  wis: { score: 10, mod: 0 },
-  cha: { score: 10, mod: 0 },
+const abilityIds = Object.keys(abilityNames) as AbilityId[]
+const activeAbility = ref<AbilityId | null>(null)
+const dialogOpen = computed({
+  get: () => activeAbility.value !== null,
+  set: (open: boolean) => {
+    if (!open) activeAbility.value = null
+  },
 })
 
-watch(
-  () => props.abilities,
-  (abilities) => {
-    for (const ability of Object.keys(abilityNames) as AbilityId[]) {
-      Object.assign(abilityForms[ability], abilities[ability])
-    }
-  },
-  { immediate: true, deep: true },
-)
-
-const savingAbility = ref<AbilityId | null>(null)
-
-async function saveAbility(ability: AbilityId) {
-  savingAbility.value = ability
-
-  try {
-    const updatedAbility = await updateCharacterAbility(props.characterId, ability, {
-      score: abilityForms[ability].score,
-      mod: abilityForms[ability].mod,
-    })
-
-    abilityForms[ability].score = updatedAbility.score
-    abilityForms[ability].mod = updatedAbility.mod
-
-    emit('updated', ability, {
-      score: updatedAbility.score,
-      mod: updatedAbility.mod,
-    })
-
-    const modifier = updatedAbility.mod >= 0 ? `+${updatedAbility.mod}` : updatedAbility.mod
-    emit(
-      'saved',
-      `${abilityNames[ability]}: ${updatedAbility.score}, модификатор ${modifier} — сохранено`,
-    )
-  } catch (err) {
-    emit('error', err instanceof Error ? err.message : 'Не удалось сохранить характеристику')
-  } finally {
-    savingAbility.value = null
-  }
+function openAbilityDialog(ability: AbilityId) {
+  activeAbility.value = ability
 }
 </script>
 
@@ -81,61 +44,48 @@ async function saveAbility(ability: AbilityId) {
     <h2 class="abilities-section__title">Характеристики</h2>
 
     <div class="abilities-list">
-      <v-card
-        v-for="ability in Object.keys(abilityNames) as AbilityId[]"
-        :key="ability"
-        class="ability-card"
-        variant="flat"
-      >
+      <v-card v-for="ability in abilityIds" :key="ability" class="ability-card" variant="flat">
         <div class="ability-card__inner">
           <div class="ability-card__name">
             {{ abilityNames[ability] }}
           </div>
 
           <div class="ability-card__score">
-            <v-text-field
-              v-model.number="abilityForms[ability].score"
-              type="number"
-              min="1"
-              max="30"
-              variant="plain"
-              density="compact"
-              hide-details
-              single-line
-              @keydown.enter.prevent="saveAbility(ability)"
-            />
+            {{ props.abilities[ability].score }}
           </div>
 
           <div class="ability-card__modifier">
-            <v-text-field
-              v-model.number="abilityForms[ability].mod"
-              type="number"
-              min="-10"
-              max="10"
-              variant="plain"
-              density="compact"
-              hide-details
-              single-line
-              @keydown.enter.prevent="saveAbility(ability)"
-            />
+            {{
+              props.abilities[ability].mod >= 0
+                ? `+${props.abilities[ability].mod}`
+                : props.abilities[ability].mod
+            }}
           </div>
 
-          <div class="ability-card__modifier-label">МОДИФИКАТОР</div>
-
           <v-btn
-            class="abilities__save-button"
+            class="abilities__edit-button"
             size="small"
             variant="text"
-            :loading="savingAbility === ability"
-            :disabled="savingAbility !== null"
-            @click="saveAbility(ability)"
+            prepend-icon="mdi-pencil"
+            @click="openAbilityDialog(ability)"
           >
-            Сохранить
+            Редактировать
           </v-btn>
         </div>
       </v-card>
     </div>
 
+    <CharacterAbilitiesDialog
+      v-if="activeAbility"
+      :key="activeAbility"
+      v-model="dialogOpen"
+      :character-id="props.characterId"
+      :ability="activeAbility"
+      :abilities="props.abilities"
+      @updated="(ability, value) => emit('updated', ability, value)"
+      @saved="emit('saved', $event)"
+      @error="emit('error', $event)"
+    />
   </section>
 </template>
 
@@ -180,11 +130,6 @@ async function saveAbility(ability: AbilityId) {
     box-shadow 0.2s ease;
 }
 
-.ability-card:hover {
-  border-color: var(--card-hover-border);
-  box-shadow: 0 4px 14px rgb(0 0 0 / 12%);
-}
-
 .ability-card__inner {
   display: flex;
   flex-direction: column;
@@ -212,30 +157,10 @@ async function saveAbility(ability: AbilityId) {
   width: 100%;
   flex: 1;
   min-height: 75px;
-}
-
-.ability-card__score :deep(.v-field) {
-  width: 100%;
-  background: transparent;
-  color: var(--text-color);
-}
-
-.ability-card__score :deep(.v-field__input) {
-  min-height: 65px;
-  padding: 0;
   color: var(--heading-color);
   font-size: 2.7rem;
   font-weight: 800;
   line-height: 1;
-  text-align: center;
-}
-
-.ability-card__score :deep(input) {
-  text-align: center;
-}
-
-.ability-card__score :deep(.v-field__outline) {
-  display: none;
 }
 
 .ability-card__modifier {
@@ -249,38 +174,10 @@ async function saveAbility(ability: AbilityId) {
   border-radius: 50%;
   background: var(--page-background);
   box-shadow: 0 2px 5px rgb(0 0 0 / 8%);
-}
-
-.ability-card__modifier :deep(.v-field) {
-  width: 100%;
-  background: transparent;
-  color: var(--heading-color);
-}
-
-.ability-card__modifier :deep(.v-field__input) {
-  min-height: 40px;
-  padding: 0;
   color: var(--heading-color);
   font-size: 1.3rem;
   font-weight: 800;
   text-align: center;
-}
-
-.ability-card__modifier :deep(input) {
-  width: 100%;
-  padding: 0;
-  text-align: center;
-  appearance: textfield;
-}
-
-.ability-card__modifier :deep(input::-webkit-inner-spin-button),
-.ability-card__modifier :deep(input::-webkit-outer-spin-button) {
-  appearance: none;
-  -webkit-appearance: none;
-}
-
-.ability-card__modifier :deep(.v-field__outline) {
-  display: none;
 }
 
 .ability-card__modifier-label {
@@ -291,7 +188,7 @@ async function saveAbility(ability: AbilityId) {
   letter-spacing: 0.08em;
 }
 
-.abilities__save-button {
+.abilities__edit-button {
   min-height: 38px;
   margin-top: 8px;
   padding: 8px 14px;
@@ -306,27 +203,27 @@ async function saveAbility(ability: AbilityId) {
     border-color 0.15s ease;
 }
 
-.abilities__save-button :deep(.v-btn__content) {
+.abilities__edit-button :deep(.v-btn__content) {
   color: var(--button-text) !important;
 }
 
-.abilities__save-button:hover {
+.abilities__edit-button:hover {
   border-color: var(--button-hover-border);
   background: var(--button-hover-background) !important;
 }
 
-.abilities__save-button:focus-visible {
+.abilities__edit-button:focus-visible {
   outline: 2px solid var(--accent-color);
   outline-offset: 2px;
 }
 
-.abilities__save-button:disabled {
+.abilities__edit-button:disabled {
   opacity: 0.55;
 }
 
 @media (max-width: 480px) {
   .ability-card {
-    max-width: 210px;
+    max-width: 320px;
   }
 }
 </style>
