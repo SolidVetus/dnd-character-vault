@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useTemplateRef, ref, watch } from 'vue'
 import { updateInspiration } from '../api/character/abilities'
-import { sparkles } from 'party-js'
+import { useSparkles } from '@/composables/useSparkles'
 
 interface Props {
   characterId: string
@@ -18,6 +18,8 @@ const emit = defineEmits<{
 
 const inspiration = ref(props.inspiration)
 const saving = ref(false)
+const inspirationButton = useTemplateRef<HTMLButtonElement>('inspirationButton')
+const { playSparkles } = useSparkles()
 
 watch(
   () => props.inspiration,
@@ -38,7 +40,7 @@ async function saveInspiration(value: boolean) {
     inspiration.value = result.value
 
     if (result.value && !previousValue) {
-      playSparkles()
+      playSparkles(inspirationButton.value)
     }
     emit('updated', result.value)
     emit('saved', 'Вдохновение сохранено')
@@ -53,14 +55,6 @@ async function saveInspiration(value: boolean) {
 function toggleInspiration() {
   if (saving.value) return
   saveInspiration(!inspiration.value)
-}
-
-const inspirationButton = useTemplateRef('inspirationButton')
-
-function playSparkles() {
-  const button = inspirationButton.value
-  if (!button || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-  sparkles(button)
 }
 </script>
 

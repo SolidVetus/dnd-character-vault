@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
-import type { AbilityId, Character } from '@/types/character'
-import { updateCharacterSavingThrow } from '../api/character/abilities'
+import { computed, ref, watch } from 'vue'
+import type { AbilityId, Character, CharacterSavingThrow } from '@/types/character'
+import CharacterSavingThrowDialog from './modal/CharacterSavingThrowDialog.vue'
 
 interface Props {
   characterId: string
@@ -11,13 +11,24 @@ interface Props {
 const props = defineProps<Props>()
 
 const emit = defineEmits<{
-  updated: [savingThrow: Character['savingThrows'][number]]
+  updated: [savingThrow: CharacterSavingThrow]
   error: [message: string]
   saved: [message: string]
 }>()
 
 const localSavingThrows = ref<Character['savingThrows']>([])
-const savingSavingThrow = ref<AbilityId | null>(null)
+const activeAbility = ref<AbilityId | null>(null)
+
+const activeSavingThrow = computed(
+  () => localSavingThrows.value.find((savingThrow) => savingThrow.ability === activeAbility.value) ?? null,
+)
+
+const dialogOpen = computed({
+  get: () => activeAbility.value !== null,
+  set: (open: boolean) => {
+    if (!open) activeAbility.value = null
+  },
+})
 
 watch(
   () => props.savingThrows,
@@ -27,36 +38,23 @@ watch(
   { immediate: true, deep: true },
 )
 
-async function saveSavingThrow(savingThrow: Character['savingThrows'][number]) {
-  if (savingSavingThrow.value !== null) return
+function openSavingThrow(ability: AbilityId) {
+  activeAbility.value = ability
+}
 
-  savingSavingThrow.value = savingThrow.ability
+function handleUpdated(savingThrow: CharacterSavingThrow) {
+  const index = localSavingThrows.value.findIndex((item) => item.ability === savingThrow.ability)
 
-  try {
-    const updatedSavingThrow = await updateCharacterSavingThrow(
-      props.characterId,
-      savingThrow.ability,
-      {
-        proficient: savingThrow.proficient,
-        bonus: savingThrow.bonus,
-      },
-    )
-
-    const index = localSavingThrows.value.findIndex(
-      (item) => item.ability === updatedSavingThrow.ability,
-    )
-
-    if (index !== -1) {
-      localSavingThrows.value[index] = { ...updatedSavingThrow }
-    }
-
-    emit('updated', updatedSavingThrow)
-    emit('saved', `Спасбросок «${updatedSavingThrow.name}»: изменения сохранены.`)
-  } catch (err) {
-    emit('error', err instanceof Error ? err.message : 'Не удалось сохранить спасбросок')
-  } finally {
-    savingSavingThrow.value = null
+  if (index !== -1) {
+    localSavingThrows.value[index] = { ...savingThrow }
   }
+
+  emit('updated', savingThrow)
+}
+
+function formatBonus(bonus: number | null): string {
+  if (bonus === null) return '—'
+  return bonus >= 0 ? `+${bonus}` : String(bonus)
 }
 </script>
 
@@ -73,14 +71,11 @@ async function saveSavingThrow(savingThrow: Character['savingThrows'][number]) {
           class="saving-throws__item"
         >
           <template #prepend>
-            <v-btn
+            <v-icon
               :icon="savingThrow.proficient ? 'mdi-radiobox-marked' : 'mdi-radiobox-blank'"
-              variant="text"
-              density="compact"
-              size="small"
-              class="saving-throws__proficiency-button"
-              :aria-label="savingThrow.proficient ? 'Убрать владение' : 'Добавить владение'"
-              @click="savingThrow.proficient = !savingThrow.proficient"
+              :aria-label="savingThrow.proficient ? 'Есть владение' : 'Нет владения'"
+              class="saving-throws__proficiency-icon"
+              :class="{ 'saving-throws__proficiency-icon--proficient': savingThrow.proficient }"
             />
           </template>
 
@@ -92,40 +87,32 @@ async function saveSavingThrow(savingThrow: Character['savingThrows'][number]) {
           </v-list-item-title>
 
           <template #append>
-            <div class="d-flex align-center ga-1">
-              <input
-                :value="savingThrow.bonus ?? ''"
-                :aria-label="`Дополнительный бонус: ${savingThrow.name}`"
-                type="number"
-                min="-99"
-                max="99"
-                class="saving-throws__bonus-input"
-                @input="
-                  (event) => {
-                    const value = (event.target as HTMLInputElement).value
-                    const parsed = value === '' ? null : Number(value)
-                    savingThrow.bonus =
-                      parsed === null || !Number.isFinite(parsed) ? null : Math.trunc(parsed)
-                  }
-                "
-                @keydown.enter.prevent="saveSavingThrow(savingThrow)"
-              />
-
+            <div class="saving-throws__actions">
+              <span class="saving-throws__bonus">{{ formatBonus(savingThrow.bonus) }}</span>
               <v-btn
-                icon="mdi-content-save"
+                icon="mdi-pencil"
                 variant="text"
                 size="small"
-                class="saving-throws__save-button"
-                :aria-label="`Сохранить спасбросок: ${savingThrow.name}`"
-                :loading="savingSavingThrow === savingThrow.ability"
-                :disabled="savingSavingThrow !== null"
-                @click="saveSavingThrow(savingThrow)"
+                class="saving-throws__edit-button"
+                :aria-label="`Редактировать спасбросок: ${savingThrow.name}`"
+                @click="openSavingThrow(savingThrow.ability)"
               />
             </div>
           </template>
         </v-list-item>
       </v-list>
     </v-card>
+
+    <CharacterSavingThrowDialog
+      v-if="activeSavingThrow"
+      :key="activeSavingThrow.ability"
+      v-model="dialogOpen"
+      :character-id="props.characterId"
+      :saving-throw="activeSavingThrow"
+      @updated="handleUpdated"
+      @saved="emit('saved', $event)"
+      @error="emit('error', $event)"
+    />
   </section>
 </template>
 
@@ -169,17 +156,20 @@ async function saveSavingThrow(savingThrow: Character['savingThrows'][number]) {
   border-bottom: 0;
 }
 
+.saving-throws__item :deep(.v-list-item__prepend > .v-list-item__spacer) {
+  width: 8px;
+}
+
 .saving-throws__item:hover {
   background: var(--page-background);
 }
 
-.saving-throws__proficiency-button {
-  margin-right: 4px;
-  color: var(--accent-color);
+.saving-throws__proficiency-icon {
+  color: var(--text-muted);
 }
 
-.saving-throws__proficiency-button:hover {
-  color: var(--button-hover-border);
+.saving-throws__proficiency-icon--proficient {
+  color: var(--accent-color);
 }
 
 .saving-throws__name {
@@ -193,63 +183,30 @@ async function saveSavingThrow(savingThrow: Character['savingThrows'][number]) {
   font-weight: 800;
 }
 
-.saving-throws__save-button {
+.saving-throws__actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.saving-throws__bonus {
+  min-width: 36px;
+  color: var(--text-color);
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.saving-throws__edit-button {
   color: var(--accent-color);
 }
 
-.saving-throws__save-button:hover {
+.saving-throws__edit-button:hover {
   color: var(--button-hover-border);
 }
 
-.saving-throws__save-button:focus-visible,
-.saving-throws__proficiency-button:focus-visible {
+.saving-throws__edit-button:focus-visible {
   outline: 2px solid var(--accent-color);
   outline-offset: 2px;
-}
-
-.saving-throws__bonus-input {
-  box-sizing: border-box;
-  display: block;
-  width: 76px;
-  min-width: 76px;
-  height: 36px;
-  padding: 0 6px;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  background: var(--page-background);
-  color: var(--text-color);
-  font-family: inherit;
-  font-size: 16px;
-  font-weight: 600;
-  line-height: normal;
-  text-align: center;
-  appearance: textfield;
-  -moz-appearance: textfield;
-  transition:
-    border-color 0.15s ease,
-    box-shadow 0.15s ease,
-    background-color 0.15s ease;
-}
-
-.saving-throws__bonus-input::-webkit-inner-spin-button,
-.saving-throws__bonus-input::-webkit-outer-spin-button {
-  margin: 0;
-  appearance: none;
-  -webkit-appearance: none;
-}
-
-.saving-throws__bonus-input:hover {
-  border-color: var(--card-hover-border);
-}
-
-.saving-throws__bonus-input:focus-visible {
-  border-color: var(--accent-color);
-  outline: 2px solid var(--accent-color);
-  outline-offset: 1px;
-}
-
-.saving-throws__bonus-input:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 </style>
