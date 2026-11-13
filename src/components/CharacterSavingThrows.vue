@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import type { AbilityId, Character, CharacterSavingThrow } from '@/types/character'
-import CharacterSavingThrowDialog from './modal/CharacterSavingThrowDialog.vue'
+import CharacterSavingThrowsDialog from './modal/CharacterSavingThrowsDialog.vue'
 
 interface Props {
   characterId: string
@@ -20,7 +20,9 @@ const localSavingThrows = ref<Character['savingThrows']>([])
 const activeAbility = ref<AbilityId | null>(null)
 
 const activeSavingThrow = computed(
-  () => localSavingThrows.value.find((savingThrow) => savingThrow.ability === activeAbility.value) ?? null,
+  () =>
+    localSavingThrows.value.find((savingThrow) => savingThrow.ability === activeAbility.value) ??
+    null,
 )
 
 const dialogOpen = computed({
@@ -103,7 +105,7 @@ function formatBonus(bonus: number | null): string {
       </v-list>
     </v-card>
 
-    <CharacterSavingThrowDialog
+    <CharacterSavingThrowsDialog
       v-if="activeSavingThrow"
       :key="activeSavingThrow.ability"
       v-model="dialogOpen"
@@ -174,7 +176,7 @@ function formatBonus(bonus: number | null): string {
 
 .saving-throws__name {
   color: var(--text-color);
-  font-size: 0.95rem;
+  font-size: clamp(0.68rem, calc(0.22rem + 3.1cqi), 0.95rem);
   font-weight: 500;
 }
 
