@@ -1,12 +1,10 @@
 <script setup lang="ts">
-import { reactive, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import type { Character } from '@/types/character'
+import { updateCharacterDeathSaves } from '../api/character/combat'
+import CharacterCombatDialog from './modal/CharacterCombatDialog.vue'
 
-import {
-  updateCharacterCombat,
-  updateCharacterHits,
-  updateCharacterDeathSaves,
-} from '../api/character/combat'
+type CombatDialogSection = 'combat' | 'hits'
 
 interface Props {
   characterId: string
@@ -21,92 +19,56 @@ const emit = defineEmits<{
   error: [message: string]
 }>()
 
-const form = reactive({
-  armorClass: props.combat.armorClass,
-  initiative: props.combat.initiative,
-  speed: props.combat.speed,
-  hitDice: props.combat.hitDice,
-  hp: {
-    max: props.combat.hp.max,
-    current: props.combat.hp.current,
-    temp: props.combat.hp.temp,
-  },
-  deathSaves: {
-    successes: props.combat.deathSaves.successes,
-    failures: props.combat.deathSaves.failures,
+const deathSaves = reactive({ ...props.combat.deathSaves })
+const savingDeathSaves = ref(false)
+const activeDialog = ref<CombatDialogSection | null>(null)
+
+const dialogOpen = computed({
+  get: () => activeDialog.value !== null,
+  set: (open: boolean) => {
+    if (!open) activeDialog.value = null
   },
 })
 
-const savingCombat = ref(false)
-const savingHp = ref(false)
-const savingDeathSaves = ref(false)
+const combatStats = computed(() => [
+  { label: 'КД', value: String(props.combat.armorClass) },
+  {
+    label: 'Инициатива',
+    value: props.combat.initiative > 0 ? `+${props.combat.initiative}` : String(props.combat.initiative),
+  },
+  { label: 'Скорость', value: String(props.combat.speed) },
+])
+
+const hitStats = computed(() => [
+  { label: 'Максимум хитов', value: String(props.combat.hp.max) },
+  { label: 'Текущие хиты', value: String(props.combat.hp.current) },
+  { label: 'Временные хиты', value: String(props.combat.hp.temp) },
+  { label: 'Кость хитов', value: props.combat.hitDice },
+])
 
 watch(
-  () => props.combat,
-  (combat) => {
-    Object.assign(form, {
-      armorClass: combat.armorClass,
-      initiative: combat.initiative,
-      speed: combat.speed,
-      hitDice: combat.hitDice,
-    })
-
-    Object.assign(form.hp, combat.hp)
-    Object.assign(form.deathSaves, combat.deathSaves)
-  },
+  () => props.combat.deathSaves,
+  (value) => Object.assign(deathSaves, value),
+  { immediate: true, deep: true },
 )
 
-async function saveCombat() {
-  savingCombat.value = true
-
-  try {
-    const combat = await updateCharacterCombat(props.characterId, {
-      armorClass: form.armorClass,
-      initiative: form.initiative,
-      speed: form.speed,
-      hitDice: form.hitDice,
-    })
-
-    Object.assign(form.hp, combat.hp)
-    Object.assign(form.deathSaves, combat.deathSaves)
-
-    emit('updated', combat)
-    emit('saved', 'Боевые характеристики сохранены')
-  } catch (err) {
-    emit('error', err instanceof Error ? err.message : 'Не удалось сохранить боевые характеристики')
-  } finally {
-    savingCombat.value = false
-  }
-}
-
-async function saveHp() {
-  savingHp.value = true
-
-  try {
-    const hp = await updateCharacterHits(props.characterId, { ...form.hp })
-
-    Object.assign(form.hp, hp)
-
-    emitUpdatedCombat()
-    emit('saved', 'Хиты сохранены')
-  } catch (err) {
-    emit('error', err instanceof Error ? err.message : 'Не удалось сохранить хиты')
-  } finally {
-    savingHp.value = false
-  }
+function openDialog(section: CombatDialogSection) {
+  activeDialog.value = section
 }
 
 async function saveDeathSaves() {
   savingDeathSaves.value = true
 
   try {
-    const deathSaves = await updateCharacterDeathSaves(props.characterId, {
-      ...form.deathSaves,
+    const updatedDeathSaves = await updateCharacterDeathSaves(props.characterId, {
+      ...deathSaves,
     })
 
-    Object.assign(form.deathSaves, deathSaves)
-
-    emitUpdatedCombat()
+    Object.assign(deathSaves, updatedDeathSaves)
+    emit('updated', {
+      ...props.combat,
+      deathSaves: { ...deathSaves },
+    })
     emit('saved', 'Спасброски от смерти сохранены')
   } catch (err) {
     emit('error', err instanceof Error ? err.message : 'Не удалось сохранить спасброски от смерти')
@@ -115,24 +77,12 @@ async function saveDeathSaves() {
   }
 }
 
-function emitUpdatedCombat() {
-  emit('updated', {
-    ...props.combat,
-    armorClass: form.armorClass,
-    initiative: form.initiative,
-    speed: form.speed,
-    hitDice: form.hitDice,
-    hp: { ...form.hp },
-    deathSaves: { ...form.deathSaves },
-  })
-}
-
 function setDeathSaveSuccesses(value: number) {
-  form.deathSaves.successes = form.deathSaves.successes === value ? value - 1 : value
+  deathSaves.successes = deathSaves.successes === value ? value - 1 : value
 }
 
 function setDeathSaveFailures(value: number) {
-  form.deathSaves.failures = form.deathSaves.failures === value ? value - 1 : value
+  deathSaves.failures = deathSaves.failures === value ? value - 1 : value
 }
 </script>
 
@@ -142,52 +92,22 @@ function setDeathSaveFailures(value: number) {
 
     <v-card class="combat-card" variant="outlined">
       <v-card-text class="combat-card__content">
-        <v-row>
-          <v-col cols="12" sm="4">
-            <v-text-field
-              v-model.number="form.armorClass"
-              label="КД"
-              type="number"
-              min="0"
-              max="50"
-              density="comfortable"
-              @keyup.enter="saveCombat"
-            />
-          </v-col>
+        <div class="combat-summary">
+          <div v-for="stat in combatStats" :key="stat.label" class="combat-summary__item">
+            <span class="combat-summary__label">{{ stat.label }}</span>
+            <strong class="combat-summary__value">{{ stat.value }}</strong>
+          </div>
+        </div>
 
-          <v-col cols="12" sm="4">
-            <v-text-field
-              v-model.number="form.initiative"
-              label="Инициатива"
-              type="number"
-              min="-50"
-              max="50"
-              density="comfortable"
-              @keyup.enter="saveCombat"
-            />
-          </v-col>
-
-          <v-col cols="12" sm="4">
-            <v-text-field
-              v-model.number="form.speed"
-              label="Скорость"
-              type="number"
-              min="0"
-              max="200"
-              density="comfortable"
-              @keyup.enter="saveCombat"
-            />
-          </v-col>
-        </v-row>
-
-        <v-btn
-          class="combat-card__save-button"
-          :loading="savingCombat"
-          :disabled="savingCombat"
-          @click="saveCombat"
-        >
-          Сохранить характеристики
-        </v-btn>
+        <div class="combat-card__actions">
+          <v-btn
+            class="combat-card__edit-button"
+            prepend-icon="mdi-pencil"
+            @click="openDialog('combat')"
+          >
+            Редактировать
+          </v-btn>
+        </div>
       </v-card-text>
     </v-card>
 
@@ -195,62 +115,22 @@ function setDeathSaveFailures(value: number) {
 
     <v-card class="combat-card" variant="outlined">
       <v-card-text class="combat-card__content">
-        <v-row>
-          <v-col cols="12" sm="4">
-            <v-text-field
-              v-model.number="form.hp.max"
-              label="Максимум хитов"
-              type="number"
-              min="0"
-              max="9999"
-              density="comfortable"
-              @keyup.enter="saveHp"
-            />
-          </v-col>
+        <div class="combat-summary">
+          <div v-for="stat in hitStats" :key="stat.label" class="combat-summary__item">
+            <span class="combat-summary__label">{{ stat.label }}</span>
+            <strong class="combat-summary__value">{{ stat.value }}</strong>
+          </div>
+        </div>
 
-          <v-col cols="12" sm="4">
-            <v-text-field
-              v-model.number="form.hp.current"
-              label="Текущие хиты"
-              type="number"
-              min="0"
-              max="9999"
-              density="comfortable"
-              @keyup.enter="saveHp"
-            />
-          </v-col>
-
-          <v-col cols="12" sm="4">
-            <v-text-field
-              v-model.number="form.hp.temp"
-              label="Временные хиты"
-              type="number"
-              min="0"
-              max="9999"
-              density="comfortable"
-              @keyup.enter="saveHp"
-            />
-          </v-col>
-
-          <v-col cols="12" sm="4">
-            <v-text-field
-              v-model="form.hitDice"
-              label="Кость хитов"
-              placeholder="1d8"
-              density="comfortable"
-              @keyup.enter="saveCombat"
-            />
-          </v-col>
-        </v-row>
-
-        <v-btn
-          class="combat-card__save-button"
-          :loading="savingHp"
-          :disabled="savingHp"
-          @click="saveHp"
-        >
-          Сохранить хиты
-        </v-btn>
+        <div class="combat-card__actions">
+          <v-btn
+            class="combat-card__edit-button"
+            prepend-icon="mdi-pencil"
+            @click="openDialog('hits')"
+          >
+            Редактировать
+          </v-btn>
+        </div>
       </v-card-text>
     </v-card>
 
@@ -271,9 +151,9 @@ function setDeathSaveFailures(value: number) {
                 v-for="value in [1, 2, 3]"
                 :key="`success-${value}`"
                 :aria-label="`Успех ${value}`"
-                :aria-pressed="form.deathSaves.successes >= value"
-                :color="form.deathSaves.successes >= value ? 'success' : undefined"
-                :variant="form.deathSaves.successes >= value ? 'flat' : 'outlined'"
+                :aria-pressed="deathSaves.successes >= value"
+                :color="deathSaves.successes >= value ? 'success' : undefined"
+                :variant="deathSaves.successes >= value ? 'flat' : 'outlined'"
                 icon
                 size="small"
                 class="death-saves__circle"
@@ -297,9 +177,9 @@ function setDeathSaveFailures(value: number) {
                 v-for="value in [1, 2, 3]"
                 :key="`failure-${value}`"
                 :aria-label="`Неудача ${value}`"
-                :aria-pressed="form.deathSaves.failures >= value"
-                :color="form.deathSaves.failures >= value ? 'error' : undefined"
-                :variant="form.deathSaves.failures >= value ? 'flat' : 'outlined'"
+                :aria-pressed="deathSaves.failures >= value"
+                :color="deathSaves.failures >= value ? 'error' : undefined"
+                :variant="deathSaves.failures >= value ? 'flat' : 'outlined'"
                 icon
                 size="small"
                 class="death-saves__circle"
@@ -312,16 +192,30 @@ function setDeathSaveFailures(value: number) {
           </div>
         </div>
 
-        <v-btn
-          class="combat-card__save-button mt-4"
-          :loading="savingDeathSaves"
-          :disabled="savingDeathSaves"
-          @click="saveDeathSaves"
-        >
-          Сохранить спасброски
-        </v-btn>
+        <div class="combat-card__actions">
+          <v-btn
+            class="combat-card__save-button"
+            :loading="savingDeathSaves"
+            :disabled="savingDeathSaves"
+            @click="saveDeathSaves"
+          >
+            Сохранить спасброски
+          </v-btn>
+        </div>
       </v-card-text>
     </v-card>
+
+    <CharacterCombatDialog
+      v-if="activeDialog"
+      :key="activeDialog"
+      v-model="dialogOpen"
+      :character-id="props.characterId"
+      :combat="props.combat"
+      :section="activeDialog"
+      @updated="emit('updated', $event)"
+      @saved="emit('saved', $event)"
+      @error="emit('error', $event)"
+    />
   </section>
 </template>
 
@@ -353,6 +247,46 @@ function setDeathSaveFailures(value: number) {
 
 .combat-card__content {
   color: var(--text-color);
+}
+
+.combat-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 100px), 1fr));
+  gap: 8px;
+}
+
+.combat-summary__item {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--page-background);
+  text-align: center;
+}
+
+.combat-summary__label {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.combat-summary__value {
+  color: var(--heading-color);
+  font-size: 1.1rem;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.combat-card__actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
 }
 
 .combat-card :deep(.v-field) {
@@ -415,6 +349,34 @@ function setDeathSaveFailures(value: number) {
 }
 
 .combat-card__save-button :deep(.v-btn__content) {
+  color: var(--button-text);
+}
+
+.combat-card__edit-button {
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--button-border);
+  border-radius: 8px;
+  background: var(--button-background) !important;
+  color: var(--button-text) !important;
+  font-weight: 600;
+  letter-spacing: 0.017857em;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.combat-card__edit-button:hover:not(:disabled) {
+  border-color: var(--button-hover-border);
+  background: var(--button-hover-background) !important;
+}
+
+.combat-card__edit-button:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+.combat-card__edit-button :deep(.v-btn__content) {
   color: var(--button-text);
 }
 
@@ -487,6 +449,12 @@ function setDeathSaveFailures(value: number) {
 
   .death-saves__label {
     width: 84px;
+  }
+}
+
+@media (max-width: 600px) {
+  .combat-card__actions {
+    justify-content: center;
   }
 }
 </style>
