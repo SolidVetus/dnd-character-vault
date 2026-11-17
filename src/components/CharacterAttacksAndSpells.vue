@@ -1,11 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import type { CharacterAttack } from '@/types/character'
-import {
-  createCharacterAttack,
-  updateCharacterAttack,
-  deleteCharacterAttack,
-} from '@/api/character/attacks'
+import CharacterAttackDialog from './modal/CharacterAttackDialog.vue'
 
 const props = defineProps<{
   characterId: string
@@ -18,264 +14,107 @@ const emit = defineEmits<{
   error: [message: string]
 }>()
 
-const newAttackName = ref('')
-const newAttackBonus = ref<number | null>(null)
-const newAttackDamage = ref('')
+const dialogOpen = ref(false)
+const activeAttackId = ref<string | null>(null)
+const activeAttack = computed(
+  () => props.attacks.find((attack) => attack.id === activeAttackId.value) ?? null,
+)
 
-const isAdding = ref(false)
-const isAddFormVisible = ref(false)
-
-function handleShowAddForm() {
-  isAddFormVisible.value = true
+function openAddDialog() {
+  activeAttackId.value = null
+  dialogOpen.value = true
 }
 
-function handleCancelAddForm() {
-  isAddFormVisible.value = false
-  newAttackName.value = ''
-  newAttackBonus.value = null
-  newAttackDamage.value = ''
+function openEditDialog(attack: CharacterAttack) {
+  activeAttackId.value = attack.id
+  dialogOpen.value = true
 }
 
-function updateAttackDraft(
-  attackId: string,
-  field: 'name' | 'attackBonus' | 'damage',
-  value: string | number | null,
-) {
-  const attack = props.attacks.find((item) => item.id === attackId)
+function handleCreated(attack: CharacterAttack) {
+  emit('update:attacks', [...props.attacks, attack])
+}
 
-  if (!attack) return
-
-  const updatedAttack = {
-    ...attack,
-    [field]: value,
-  }
-
+function handleUpdated(updatedAttack: CharacterAttack) {
   emit(
     'update:attacks',
-    props.attacks.map((item) => (item.id === attackId ? updatedAttack : item)),
+    props.attacks.map((attack) => (attack.id === updatedAttack.id ? updatedAttack : attack)),
   )
 }
 
-async function handleAddAttack() {
-  const name = newAttackName.value.trim()
-  const bonus = newAttackBonus.value
-  const damage = newAttackDamage.value.trim()
-
-  if (isAdding.value) return
-
-  if (!name || !damage || !bonus) {
-    emit('error', 'Заполни все поля')
-    return
-  }
-
-  isAdding.value = true
-
-  try {
-    const createdAttack = await createCharacterAttack(props.characterId, {
-      name,
-      attackBonus: newAttackBonus.value,
-      damage,
-      note: null,
-    })
-
-    emit('update:attacks', [...props.attacks, createdAttack])
-    emit('saved', `Атака «${createdAttack.name}» добавлена`)
-    handleCancelAddForm()
-  } catch (err) {
-    emit('error', err instanceof Error ? err.message : 'Не удалось сохранить атаку')
-  } finally {
-    isAdding.value = false
-  }
+function handleDeleted(attackId: string) {
+  emit(
+    'update:attacks',
+    props.attacks.filter((attack) => attack.id !== attackId),
+  )
 }
 
-async function saveEditedAttack(attackId: string) {
-  const attack = props.attacks.find((item) => item.id === attackId)
-
-  if (!attack) return
-
-  if (!attack.name.trim() || !attack.damage.trim()) {
-    emit('error', 'Название и урон не должны быть пустыми')
-    return
-  }
-
-  try {
-    const updatedAttack = await updateCharacterAttack(props.characterId, attack.id, {
-      name: attack.name.trim(),
-      attackBonus: attack.attackBonus,
-      damage: attack.damage.trim(),
-    })
-
-    emit(
-      'update:attacks',
-      props.attacks.map((item) => (item.id === updatedAttack.id ? updatedAttack : item)),
-    )
-    emit('saved', `Атака «${updatedAttack.name}» сохранена`)
-  } catch (err) {
-    emit('error', err instanceof Error ? err.message : 'Не удалось сохранить изменения атаки')
-  }
-}
-
-async function removeAttack(attack: CharacterAttack) {
-  if (!window.confirm(`Удалить атаку «${attack.name}»?`)) return
-
-  try {
-    await deleteCharacterAttack(props.characterId, attack.id)
-
-    emit(
-      'update:attacks',
-      props.attacks.filter((item) => item.id !== attack.id),
-    )
-    emit('saved', `Атака «${attack.name}» удалена`)
-  } catch (err) {
-    emit('error', err instanceof Error ? err.message : 'Не удалось удалить атаку')
-  }
+function formatBonus(bonus: number | null): string {
+  if (bonus === null) return '—'
+  return bonus >= 0 ? `+${bonus}` : String(bonus)
 }
 </script>
 
 <template>
-  <section>
+  <section class="attacks-section-wrap">
     <h2 class="section-header">Атаки и заклинания</h2>
 
     <v-card class="attacks-section" variant="outlined">
-      <v-card-text>
-        <div class="attacks-table">
-          <div class="table-header">
+      <v-card-text class="attacks-section__content">
+        <div v-if="attacks.length > 0" class="attacks-table">
+          <div class="table-header" aria-hidden="true">
             <span>Название</span>
             <span>Бонус атаки</span>
             <span>Урон/вид</span>
-            <span></span>
           </div>
 
-          <div v-for="attack in attacks" :key="attack.id" class="attack-row">
-            <input
-              :value="attack.name"
-              type="text"
-              maxlength="200"
-              aria-label="Название атаки"
-              @input="
-                updateAttackDraft(attack.id, 'name', ($event.target as HTMLInputElement).value)
-              "
-              @change="saveEditedAttack(attack.id)"
-            />
-
-            <input
-              :value="attack.attackBonus ?? ''"
-              type="number"
-              min="-99"
-              max="99"
-              aria-label="Бонус атаки"
-              @input="
-                updateAttackDraft(
-                  attack.id,
-                  'attackBonus',
-                  ($event.target as HTMLInputElement).value === ''
-                    ? null
-                    : Number(($event.target as HTMLInputElement).value),
-                )
-              "
-              @change="saveEditedAttack(attack.id)"
-            />
-
-            <input
-              :value="attack.damage"
-              type="text"
-              maxlength="200"
-              aria-label="Урон и вид атаки"
-              @input="
-                updateAttackDraft(attack.id, 'damage', ($event.target as HTMLInputElement).value)
-              "
-              @change="saveEditedAttack(attack.id)"
-            />
-
-            <div class="row-actions">
-              <v-btn
-                icon="mdi-delete-outline"
-                variant="text"
-                color="error"
-                size="small"
-                :aria-label="`Удалить атаку ${attack.name}`"
-                :title="`Удалить атаку ${attack.name}`"
-                @click="removeAttack(attack)"
-              />
-            </div>
-          </div>
-
-          <p v-if="attacks.length === 0" class="empty-message">Пока нет атак.</p>
+          <article
+            v-for="attack in attacks"
+            :key="attack.id"
+            class="attack-row"
+            role="button"
+            tabindex="0"
+            :aria-label="`Редактировать атаку ${attack.name}`"
+            @click="openEditDialog(attack)"
+            @keydown.enter.prevent="openEditDialog(attack)"
+            @keydown.space.prevent="openEditDialog(attack)"
+          >
+            <strong class="attack-row__name">{{ attack.name }}</strong>
+            <span class="attack-row__bonus">{{ formatBonus(attack.attackBonus) }}</span>
+            <span class="attack-row__damage">{{ attack.damage }}</span>
+          </article>
         </div>
 
+        <p v-else class="empty-message">Пока нет атак.</p>
         <v-btn
-          v-if="!isAddFormVisible"
           variant="flat"
           block
           class="attacks__add-button"
           prepend-icon="mdi-plus"
-          @click="handleShowAddForm"
+          @click="openAddDialog"
         >
           Добавить атаку/заклинание
         </v-btn>
-
-        <v-form v-else class="attacks__add-form" @submit.prevent="handleAddAttack">
-          <v-text-field
-            v-model="newAttackName"
-            label="Название атаки"
-            maxlength="200"
-            density="compact"
-            variant="outlined"
-            hide-details
-            required
-          />
-
-          <v-text-field
-            v-model.number="newAttackBonus"
-            label="Бонус атаки"
-            type="number"
-            min="-99"
-            max="99"
-            density="compact"
-            variant="outlined"
-            hide-details
-          />
-
-          <v-text-field
-            v-model="newAttackDamage"
-            label="Урон/вид"
-            maxlength="200"
-            density="compact"
-            variant="outlined"
-            hide-details
-            required
-          />
-
-          <div class="attacks__add-actions">
-            <v-btn color="primary" type="submit" :loading="isAdding" :disabled="isAdding">
-              Добавить
-            </v-btn>
-
-            <v-btn
-              class="attacks__cancel-button"
-              variant="outlined"
-              :disabled="isAdding"
-              @click="handleCancelAddForm"
-            >
-              Отмена
-            </v-btn>
-          </div>
-        </v-form>
-
       </v-card-text>
     </v-card>
+
+    <CharacterAttackDialog
+      v-if="dialogOpen"
+      :key="activeAttackId ?? 'new-attack'"
+      v-model="dialogOpen"
+      :character-id="props.characterId"
+      :attack="activeAttack"
+      @created="handleCreated"
+      @updated="handleUpdated"
+      @deleted="handleDeleted"
+      @saved="emit('saved', $event)"
+      @error="emit('error', $event)"
+    />
   </section>
 </template>
 
 <style scoped>
-.attacks-section {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  background: var(--page-surface);
-  color: var(--text-color);
+.attacks-section-wrap {
+  min-width: 0;
 }
 
 .section-header {
@@ -289,203 +128,114 @@ async function removeAttack(attack: CharacterAttack) {
   font-weight: 800;
   letter-spacing: 0.02em;
   line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 
-.section-header h2 {
-  margin: 0;
-  color: var(--heading-color);
-  font-size: 1.2rem;
-  font-weight: 800;
+.attacks-section {
+  width: 100%;
+  min-width: 0;
+  container: attacks-card / inline-size;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--page-surface);
+  color: var(--text-color);
+}
+
+.attacks-section__content {
+  min-width: 0;
+  padding: 16px;
 }
 
 .attacks-table {
   width: 100%;
   min-width: 0;
+  overflow: hidden;
 }
 
 .table-header,
 .attack-row {
   display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(110px, 0.8fr) minmax(0, 1.5fr) 36px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
   align-items: center;
-  gap: 12px;
-  padding: 12px;
+  gap: 0;
 }
 
 .table-header {
   border-bottom: 1px solid var(--border-color);
-  color: var(--heading-color);
-  font-size: 0.875rem;
+  color: var(--accent-color);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 0.9rem;
   font-weight: 700;
-  white-space: nowrap;
+  text-transform: uppercase;
+}
+
+.table-header span {
+  min-width: 0;
+  padding: 8px 6px;
+  overflow-wrap: anywhere;
+}
+
+.table-header span:nth-child(2),
+.attack-row__bonus {
+  text-align: center;
 }
 
 .attack-row {
-  border-bottom: 1px solid var(--border-color);
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.attack-row input {
-  box-sizing: border-box;
-  width: 100%;
   min-width: 0;
-  padding: 9px 10px;
-  border: 1px solid transparent;
-  border-radius: 7px;
-  background: transparent;
-  color: var(--text-color);
-  font: inherit;
-  transition:
-    border-color 0.15s ease,
-    background-color 0.15s ease;
-}
-
-.attack-row input:hover {
-  border-color: var(--border-color);
+  border-bottom: 1px dashed var(--border-color);
   background: var(--page-background);
+  color: var(--text-color);
+  cursor: pointer;
+  font-family: Georgia, 'Times New Roman', serif;
+  transition: background-color 0.15s ease;
 }
 
-.attack-row input:focus {
-  border-color: var(--accent-color);
-  background: var(--page-surface);
-  color: var(--text-color);
+.attack-row:hover {
+  background: color-mix(in srgb, var(--page-background) 78%, var(--accent-color));
+}
+
+.attack-row:focus-visible {
+  position: relative;
+  z-index: 1;
   outline: 2px solid var(--accent-color);
-  outline-offset: 1px;
+  outline-offset: -2px;
 }
 
-.attacks__add-form {
-  display: grid;
-  grid-template-columns:
-    minmax(0, 2fr)
-    minmax(100px, 1fr)
-    minmax(0, 1.5fr);
-  gap: 12px;
-  padding: 12px;
-  border: 1px solid var(--border-color);
-  border-radius: 9px;
-  background: var(--page-background);
+.attack-row__name,
+.attack-row__bonus,
+.attack-row__damage {
+  display: block;
+  min-width: 0;
+  padding: 6px;
+  overflow-wrap: anywhere;
+  font-size: 0.92rem;
+  line-height: 1.32;
 }
 
-.attacks__add-form :deep(.v-field) {
-  background: var(--page-surface);
-  color: var(--text-color);
+.attack-row__name {
+  color: var(--heading-color);
+  font-weight: 700;
 }
 
-.attacks__add-form :deep(.v-field__outline) {
-  color: var(--border-color);
-}
-
-.attacks__add-form :deep(.v-field--focused .v-field__outline) {
-  color: var(--accent-color);
-}
-
-.attacks__add-form :deep(.v-field__input),
-.attacks__add-form :deep(input) {
-  color: var(--text-color);
-  opacity: 1;
-}
-
-.attacks__add-form :deep(.v-label) {
-  color: var(--text-muted);
-  opacity: 1;
-}
-
-.attacks__add-actions {
-  grid-column: 1 / -1;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  width: 100%;
-  gap: 8px;
-}
-
-.attacks__add-button,
-.attacks__add-actions button {
-  min-height: 40px;
-  padding: 0 16px;
+.attacks__add-button {
+  min-height: 42px;
+  margin-top: 14px;
   border: 1px solid var(--button-border);
   border-radius: 8px;
   background: var(--button-background) !important;
   color: var(--button-text) !important;
   font-weight: 600;
-  letter-spacing: 0.017857em;
-  transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease;
 }
 
-.attacks__add-button :deep(.v-btn__content),
-.attacks__add-actions button :deep(.v-btn__content) {
-  color: var(--button-text) !important;
-}
-
-.attacks__add-button:hover,
-.attacks__add-actions button:not(.attacks__cancel-button):hover {
+.attacks__add-button:hover {
   border-color: var(--button-hover-border);
   background: var(--button-hover-background) !important;
 }
 
-.attacks__cancel-button {
-  border-color: var(--border-color) !important;
-  color: var(--text-color) !important;
-  background: var(--page-surface) !important;
-}
-
-.attacks__cancel-button:hover:not(:disabled) {
-  border-color: var(--card-hover-border) !important;
-  color: var(--accent-color) !important;
-  background: var(--page-background) !important;
-}
-
-.attacks__add-button:disabled,
-.attacks__add-actions button:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
-.row-actions {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.icon-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  border: 1px solid transparent;
-  border-radius: 7px;
-  background: transparent;
-  color: var(--delete-text);
-  cursor: pointer;
-  transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease;
-}
-
-.icon-button:hover {
-  border-color: var(--delete-border);
-  background: var(--delete-hover-background);
-}
-
-.icon-button:focus-visible,
-.attacks__add-button:focus-visible,
-.attacks__add-actions button:focus-visible {
+.attacks__add-button:focus-visible {
   outline: 2px solid var(--accent-color);
   outline-offset: 2px;
-}
-
-.row-actions :deep(.v-btn) {
-  color: var(--delete-text);
-}
-
-.row-actions :deep(.v-btn:hover) {
-  color: var(--delete-text);
-  background: var(--delete-hover-background);
 }
 
 .empty-message {
@@ -495,41 +245,50 @@ async function removeAttack(attack: CharacterAttack) {
   text-align: center;
 }
 
-@media (max-width: 650px) {
-  .attacks-section {
-    padding: 14px;
-  }
-
-  .table-header {
-    display: none;
-  }
-
-  .attack-row {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: 8px;
-    padding: 10px 4px;
-  }
-
-  .attack-row input:first-child {
-    grid-column: 1 / -1;
-    font-weight: 600;
-  }
-
-  .row-actions {
-    grid-column: 1 / -1;
-    display: flex;
-    justify-content: flex-end;
-  }
-
-  .attacks__add-form {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: 8px;
+@container attacks-card (max-width: 700px) {
+  .attacks-section__content {
     padding: 10px;
   }
 
-  .attacks__add-form :deep(.v-input:first-child),
-  .attacks__add-form :deep(.v-input:nth-child(3)) {
-    grid-column: 1 / -1;
+  .table-header,
+  .attack-row {
+    grid-template-columns: minmax(0, 1.25fr) minmax(50px, 0.55fr) minmax(0, 1fr);
+  }
+
+  .table-header {
+    font-size: 0.78rem;
+  }
+
+  .attack-row__name,
+  .attack-row__bonus,
+  .attack-row__damage {
+    padding: 6px 4px;
+    font-size: 0.82rem;
+  }
+}
+
+@container attacks-card (max-width: 420px) {
+  .attacks-section__content {
+    padding: 6px;
+  }
+
+  .table-header,
+  .attack-row__bonus,
+  .attack-row__name,
+  .attack-row__damage {
+    font-size: 0.72rem;
+  }
+
+  .table-header span,
+  .attack-row__name,
+  .attack-row__bonus,
+  .attack-row__damage {
+    padding: 6px 3px;
+  }
+
+  .table-header,
+  .attack-row {
+    grid-template-columns: minmax(0, 1.1fr) minmax(44px, 0.48fr) minmax(0, 1fr);
   }
 }
 </style>
