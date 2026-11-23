@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import { useDisplay } from 'vuetify'
 import { createCharacter, deleteCharacter, getAllCharacters } from '@/api/characters'
 import { getAvatarUrl } from '@/utils/avatar'
 
@@ -12,6 +13,7 @@ interface CharacterPreview {
 const characters = ref<CharacterPreview[]>([])
 const isLoading = ref(false)
 const error = ref('')
+const { width } = useDisplay()
 
 onMounted(async () => {
   isLoading.value = true
@@ -103,14 +105,23 @@ async function handleDeleteCharacter(id: string) {
             Открыть лист
           </v-btn>
 
-          <v-btn
-            variant="tonal"
-            color="error"
-            icon="mdi-delete"
-            aria-label="Удалить персонажа"
-            class="character-card__delete-button"
-            @click="handleDeleteCharacter(character.id)"
-          />
+          <v-tooltip
+            :text="`Удалить персонажа «${character.characterName}»`"
+            location="bottom"
+            :disabled="width <= 760"
+          >
+            <template #activator="{ props }">
+              <v-btn
+                v-bind="props"
+                variant="tonal"
+                color="error"
+                icon="mdi-delete"
+                :aria-label="`Удалить персонажа ${character.characterName}`"
+                class="character-card__delete-button"
+                @click="handleDeleteCharacter(character.id)"
+              />
+            </template>
+          </v-tooltip>
         </v-card-actions>
       </v-card>
     </v-col>

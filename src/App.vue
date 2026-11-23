@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { RouterView, useRoute, useRouter } from 'vue-router'
+import { useDisplay } from 'vuetify'
 import { createCharacter } from '@/api/characters'
 import { useNotificationStore } from '@/stores/notification'
 
 const route = useRoute()
 const router = useRouter()
 const notifications = useNotificationStore()
+const { width } = useDisplay()
 
 const isDarkTheme = ref(localStorage.getItem('theme') === 'dark')
 const isCreatingCharacter = ref(false)
@@ -15,7 +17,9 @@ const isCharacterPage = computed(() => route.name === 'character')
 
 const themeIcon = computed(() => (isDarkTheme.value ? 'mdi-weather-sunny' : 'mdi-weather-night'))
 
-const themeLabel = computed(() => (isDarkTheme.value ? 'Светлая тема' : 'Тёмная тема'))
+const themeLabel = computed(() =>
+  isDarkTheme.value ? 'Включить светлую тему' : 'Включить тёмную тему',
+)
 
 function toggleTheme() {
   isDarkTheme.value = !isDarkTheme.value
@@ -47,23 +51,45 @@ async function handleCreateCharacter() {
   <v-app :theme="isDarkTheme ? 'dark' : 'light'" :class="{ 'theme-dark': isDarkTheme }">
     <v-app-bar flat class="app-header">
       <v-container class="d-flex align-center app-header__content">
-        <RouterLink :to="{ name: 'home' }" class="app-header__home-link" aria-label="На главную">
-          <v-icon icon="mdi-dice-d20" size="32" class="app-header__icon mr-3" />
+        <v-tooltip text="На главную" location="bottom" :disabled="width <= 760">
+          <template #activator="{ props }">
+            <RouterLink
+              v-bind="props"
+              :to="{ name: 'home' }"
+              class="app-header__home-link"
+              aria-label="На главную"
+            >
+              <v-icon icon="mdi-dice-d20" size="32" class="app-header__icon mr-3" />
 
-          <v-toolbar-title class="font-weight-bold app-header__title">
-            Character Vault
-          </v-toolbar-title>
-        </RouterLink>
+              <v-toolbar-title class="font-weight-bold app-header__title">
+                Character Vault
+              </v-toolbar-title>
+            </RouterLink>
+          </template>
+        </v-tooltip>
 
         <v-spacer />
 
-        <v-btn v-if="isCharacterPage" class="app-header__create-button mr-2" :to="{ name: 'home' }">
+        <v-btn
+          v-if="isCharacterPage"
+          prepend-icon="mdi-view-list"
+          class="app-header__create-button app-header__desktop-action mr-2"
+          :to="{ name: 'home' }"
+        >
           Список персонажей
         </v-btn>
 
         <v-btn
+          v-if="isCharacterPage"
+          icon="mdi-view-list"
+          class="app-header__create-button app-header__mobile-action app-header__mobile-list-action"
+          :to="{ name: 'home' }"
+          aria-label="Список персонажей"
+        />
+
+        <v-btn
           prepend-icon="mdi-plus"
-          class="app-header__create-button"
+          class="app-header__create-button app-header__desktop-action"
           :loading="isCreatingCharacter"
           :disabled="isCreatingCharacter"
           @click="handleCreateCharacter"
@@ -72,15 +98,28 @@ async function handleCreateCharacter() {
         </v-btn>
 
         <v-btn
-          icon
-          variant="text"
-          class="theme-toggle ml-2"
-          :aria-label="themeLabel"
-          :title="themeLabel"
-          @click="toggleTheme"
-        >
-          <v-icon :icon="themeIcon" />
-        </v-btn>
+          icon="mdi-plus"
+          class="app-header__create-button app-header__mobile-action"
+          :aria-label="isCreatingCharacter ? 'Создаём персонажа' : 'Создать персонажа'"
+          :loading="isCreatingCharacter"
+          :disabled="isCreatingCharacter"
+          @click="handleCreateCharacter"
+        />
+
+        <v-tooltip :text="themeLabel" location="bottom" :disabled="width <= 760">
+          <template #activator="{ props }">
+            <v-btn
+              v-bind="props"
+              icon
+              variant="text"
+              class="theme-toggle ml-2"
+              :aria-label="themeLabel"
+              @click="toggleTheme"
+            >
+              <v-icon :icon="themeIcon" />
+            </v-btn>
+          </template>
+        </v-tooltip>
       </v-container>
     </v-app-bar>
 
@@ -343,14 +382,64 @@ body,
   color: var(--theme-toggle-color);
 }
 
+.app-header__mobile-action {
+  display: none;
+}
+
 @media (max-width: 600px) {
+  .app-header__content {
+    padding-inline: 0;
+  }
+
+  .app-header__icon {
+    width: 28px;
+    height: 28px;
+    margin-inline-end: 8px !important;
+  }
+
   .app-header__title {
-    font-size: 1rem;
+    font-size: 0.875rem;
+    white-space: nowrap;
   }
 
   .app-header__create-button {
-    padding-inline: 10px;
-    font-size: 0.75rem;
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
+    padding: 0;
+    margin-inline: 0 !important;
+  }
+
+  .app-header__mobile-list-action {
+    margin-inline-end: 8px !important;
+  }
+
+  .app-header__mobile-action {
+    display: inline-flex;
+  }
+
+  .app-header__desktop-action {
+    display: none;
+  }
+
+  .theme-toggle {
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
+    padding: 0;
+    margin-inline-start: 4px !important;
+  }
+}
+
+@media (max-width: 360px) {
+  .app-header__icon {
+    width: 24px;
+    height: 24px;
+    margin-inline-end: 6px !important;
+  }
+
+  .app-header__title {
+    font-size: 0.8125rem;
   }
 }
 </style>

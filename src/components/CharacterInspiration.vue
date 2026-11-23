@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useTemplateRef, ref, watch } from 'vue'
+import { useDisplay } from 'vuetify'
 import { updateInspiration } from '../api/character/abilities'
 import { useSparkles } from '@/composables/useSparkles'
 
@@ -9,6 +10,7 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+const { width } = useDisplay()
 
 const emit = defineEmits<{
   updated: [value: boolean]
@@ -64,23 +66,32 @@ function toggleInspiration() {
 
     <v-card variant="outlined" max-width="700" class="inspiration__card">
       <div class="inspiration__content">
-        <button
-          type="button"
-          ref="inspirationButton"
-          class="inspiration-toggle"
-          :class="{ 'inspiration-toggle--active': inspiration }"
-          role="switch"
-          :aria-checked="inspiration"
-          :disabled="saving"
-          :aria-label="inspiration ? 'Убрать вдохновение' : 'Получить вдохновение'"
-          @click="toggleInspiration"
+        <v-tooltip
+          :text="inspiration ? 'Убрать вдохновение' : 'Получить вдохновение'"
+          location="bottom"
+          :disabled="width <= 760"
         >
-          <v-icon
-            class="inspiration-toggle__icon"
-            :icon="inspiration ? 'mdi-star-four-points' : 'mdi-star-four-points-outline'"
-            size="36"
-          />
-        </button>
+          <template #activator="{ props }">
+            <button
+              type="button"
+              v-bind="props"
+              ref="inspirationButton"
+              class="inspiration-toggle"
+              :class="{ 'inspiration-toggle--active': inspiration }"
+              role="switch"
+              :aria-checked="inspiration"
+              :disabled="saving"
+              :aria-label="inspiration ? 'Убрать вдохновение' : 'Получить вдохновение'"
+              @click="toggleInspiration"
+            >
+              <v-icon
+                class="inspiration-toggle__icon"
+                :icon="inspiration ? 'mdi-star-four-points' : 'mdi-star-four-points-outline'"
+                size="36"
+              />
+            </button>
+          </template>
+        </v-tooltip>
       </div>
     </v-card>
   </section>
