@@ -77,7 +77,7 @@ async function saveAbility(closeAfterSave = false) {
 
     Object.assign(form, updated)
     emit('updated', props.ability, updated)
-    emit('saved', `${abilityNames[props.ability]} сохранена`)
+    emit('saved', `Характеристика(${abilityNames[props.ability]}) сохранена`)
 
     if (closeAfterSave) dialogOpen.value = false
   } catch (err) {

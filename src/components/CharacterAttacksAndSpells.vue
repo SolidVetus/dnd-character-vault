@@ -207,7 +207,7 @@ function formatBonus(bonus: number | null): string {
 .attack-row__damage {
   display: block;
   min-width: 0;
-  padding: 6px;
+  padding: 3px;
   overflow-wrap: anywhere;
   font-size: 0.92rem;
   line-height: 1.32;
@@ -262,14 +262,13 @@ function formatBonus(bonus: number | null): string {
   .attack-row__name,
   .attack-row__bonus,
   .attack-row__damage {
-    padding: 6px 4px;
     font-size: 0.82rem;
   }
 }
 
 @container attacks-card (max-width: 420px) {
   .attacks-section__content {
-    padding: 6px;
+    padding: 1rem;
   }
 
   .table-header,
@@ -283,7 +282,7 @@ function formatBonus(bonus: number | null): string {
   .attack-row__name,
   .attack-row__bonus,
   .attack-row__damage {
-    padding: 6px 3px;
+    padding: 3px;
   }
 
   .table-header,
