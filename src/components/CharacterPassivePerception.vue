@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import { useDisplay } from 'vuetify'
 import { updatePassivePerception } from '../api/character/abilities'
 
 interface Props {
@@ -17,6 +18,7 @@ const emit = defineEmits<{
 
 const value = ref(props.passivePerception)
 const saving = ref(false)
+const { width } = useDisplay()
 
 watch(
   () => props.passivePerception,
@@ -70,16 +72,25 @@ async function savePassivePerception() {
           @keydown.enter.prevent="savePassivePerception"
         />
 
-        <v-btn
-          icon="mdi-content-save"
-          variant="text"
-          size="small"
-          class="passive-perception__save-button"
-          aria-label="Сохранить пассивную внимательность"
-          :loading="saving"
-          :disabled="saving"
-          @click="savePassivePerception"
-        />
+        <v-tooltip
+          text="Сохранить пассивную внимательность"
+          location="bottom"
+          :disabled="width <= 760"
+        >
+          <template #activator="{ props }">
+            <v-btn
+              v-bind="props"
+              icon="mdi-content-save"
+              variant="text"
+              size="small"
+              class="passive-perception__save-button"
+              aria-label="Сохранить пассивную внимательность"
+              :loading="saving"
+              :disabled="saving"
+              @click="savePassivePerception"
+            />
+          </template>
+        </v-tooltip>
       </div>
     </v-card>
   </section>

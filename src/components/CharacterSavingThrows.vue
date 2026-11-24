@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { useDisplay } from 'vuetify'
 import type { AbilityId, Character, CharacterSavingThrow } from '@/types/character'
 import CharacterSavingThrowsDialog from './modal/CharacterSavingThrowsDialog.vue'
 
@@ -18,6 +19,7 @@ const emit = defineEmits<{
 
 const localSavingThrows = ref<Character['savingThrows']>([])
 const activeAbility = ref<AbilityId | null>(null)
+const { width } = useDisplay()
 
 const activeSavingThrow = computed(
   () =>
@@ -91,14 +93,23 @@ function formatBonus(bonus: number | null): string {
           <template #append>
             <div class="saving-throws__actions">
               <span class="saving-throws__bonus">{{ formatBonus(savingThrow.bonus) }}</span>
-              <v-btn
-                icon="mdi-pencil"
-                variant="text"
-                size="small"
-                class="saving-throws__edit-button"
-                :aria-label="`Редактировать спасбросок: ${savingThrow.name}`"
-                @click="openSavingThrow(savingThrow.ability)"
-              />
+              <v-tooltip
+                :text="`Редактировать спасбросок: ${savingThrow.name}`"
+                location="bottom"
+                :disabled="width <= 760"
+              >
+                <template #activator="{ props }">
+                  <v-btn
+                    v-bind="props"
+                    icon="mdi-pencil"
+                    variant="text"
+                    size="small"
+                    class="saving-throws__edit-button"
+                    :aria-label="`Редактировать спасбросок: ${savingThrow.name}`"
+                    @click="openSavingThrow(savingThrow.ability)"
+                  />
+                </template>
+              </v-tooltip>
             </div>
           </template>
         </v-list-item>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref, useTemplateRef } from 'vue'
+import { useDisplay } from 'vuetify'
 import type { CharacterSavingThrow } from '@/types/character'
 import { updateCharacterSavingThrow } from '@/api/character/abilities'
 import { useSparkles } from '@/composables/useSparkles'
@@ -32,6 +33,7 @@ const bonusError = ref('')
 const saving = ref(false)
 const proficiencyButton = useTemplateRef<HTMLDivElement>('proficiencyButton')
 const { playSparkles } = useSparkles()
+const { width } = useDisplay()
 
 function closeDialog() {
   if (saving.value) return
@@ -131,19 +133,32 @@ async function saveSavingThrow(closeAfterSave = false) {
         <v-row align="start" justify="center">
           <v-col cols="12" sm="auto">
             <div ref="proficiencyButton" class="proficiency-toggle-wrap">
-              <v-btn
-                type="button"
-                class="proficiency-toggle"
-                :class="{ 'proficiency-toggle--active': form.proficient }"
-                :prepend-icon="form.proficient ? 'mdi-shield-star' : 'mdi-shield-star-outline'"
-                :aria-pressed="form.proficient"
-                variant="outlined"
-                rounded="pill"
-                :disabled="saving"
-                @click="toggleProficient"
+              <v-tooltip
+                :text="
+                  form.proficient
+                    ? `Убрать владение спасброском «${props.savingThrow.name}»`
+                    : `Добавить владение спасброском «${props.savingThrow.name}»`
+                "
+                location="bottom"
+                :disabled="width <= 760"
               >
-                Владение
-              </v-btn>
+                <template #activator="{ props }">
+                  <v-btn
+                    v-bind="props"
+                    type="button"
+                    class="proficiency-toggle"
+                    :class="{ 'proficiency-toggle--active': form.proficient }"
+                    :prepend-icon="form.proficient ? 'mdi-shield-star' : 'mdi-shield-star-outline'"
+                    :aria-pressed="form.proficient"
+                    variant="outlined"
+                    rounded="pill"
+                    :disabled="saving"
+                    @click="toggleProficient"
+                  >
+                    Владение
+                  </v-btn>
+                </template>
+              </v-tooltip>
             </div>
           </v-col>
 

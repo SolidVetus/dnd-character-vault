@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { useDisplay } from 'vuetify'
 import type { Character, CharacterSkill } from '@/types/character'
 import CharacterSkillsDialog from './modal/CharacterSkillsDialog.vue'
 
@@ -18,6 +19,7 @@ const emit = defineEmits<{
 
 const localSkills = ref<CharacterSkill[]>([])
 const activeSkillId = ref<string | null>(null)
+const { width } = useDisplay()
 
 const activeSkill = computed(
   () => localSkills.value.find((skill) => skill.id === activeSkillId.value) ?? null,
@@ -89,14 +91,23 @@ function formatBonus(bonus: number | null): string {
           <template #append>
             <div class="character-skills__actions">
               <span class="character-skills__bonus">{{ formatBonus(skill.bonus) }}</span>
-              <v-btn
-                icon="mdi-pencil"
-                variant="text"
-                size="small"
-                class="character-skills__edit-button"
-                :aria-label="`Редактировать навык: ${skill.name}`"
-                @click="openSkillDialog(skill.id)"
-              />
+              <v-tooltip
+                :text="`Редактировать навык: ${skill.name}`"
+                location="bottom"
+                :disabled="width <= 760"
+              >
+                <template #activator="{ props }">
+                  <v-btn
+                    v-bind="props"
+                    icon="mdi-pencil"
+                    variant="text"
+                    size="small"
+                    class="character-skills__edit-button"
+                    :aria-label="`Редактировать навык: ${skill.name}`"
+                    @click="openSkillDialog(skill.id)"
+                  />
+                </template>
+              </v-tooltip>
             </div>
           </template>
         </v-list-item>

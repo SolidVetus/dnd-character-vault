@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import { useDisplay } from 'vuetify'
+
 import { updateProficiencyBonus } from '../api/character/abilities'
 
 interface Props {
@@ -17,6 +19,7 @@ const emit = defineEmits<{
 
 const proficiencyBonus = ref(props.proficiencyBonus)
 const saving = ref(false)
+const { width } = useDisplay()
 
 watch(
   () => props.proficiencyBonus,
@@ -73,16 +76,21 @@ async function saveProficiencyBonus() {
         />
       </div>
 
-      <v-btn
-        icon="mdi-content-save"
-        variant="text"
-        size="small"
-        class="proficiency-bonus__save-button"
-        aria-label="Сохранить бонус мастерства"
-        :loading="saving"
-        :disabled="saving"
-        @click="saveProficiencyBonus"
-      />
+      <v-tooltip text="Сохранить бонус мастерства" location="bottom" :disabled="width <= 760">
+        <template #activator="{ props }">
+          <v-btn
+            v-bind="props"
+            icon="mdi-content-save"
+            variant="text"
+            size="small"
+            class="proficiency-bonus__save-button"
+            aria-label="Сохранить бонус мастерства"
+            :loading="saving"
+            :disabled="saving"
+            @click="saveProficiencyBonus"
+          />
+        </template>
+      </v-tooltip>
     </v-card>
   </section>
 </template>

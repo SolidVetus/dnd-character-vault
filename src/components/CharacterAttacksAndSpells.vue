@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useDisplay } from 'vuetify'
 import type { CharacterAttack } from '@/types/character'
 import CharacterAttackDialog from './modal/CharacterAttackDialog.vue'
 
@@ -16,6 +17,7 @@ const emit = defineEmits<{
 
 const dialogOpen = ref(false)
 const activeAttackId = ref<string | null>(null)
+const { width } = useDisplay()
 const activeAttack = computed(
   () => props.attacks.find((attack) => attack.id === activeAttackId.value) ?? null,
 )
@@ -66,22 +68,29 @@ function formatBonus(bonus: number | null): string {
             <span>Бонус атаки</span>
             <span>Урон/вид</span>
           </div>
-
-          <article
-            v-for="attack in attacks"
-            :key="attack.id"
-            class="attack-row"
-            role="button"
-            tabindex="0"
-            :aria-label="`Редактировать атаку ${attack.name}`"
-            @click="openEditDialog(attack)"
-            @keydown.enter.prevent="openEditDialog(attack)"
-            @keydown.space.prevent="openEditDialog(attack)"
+          <v-tooltip
+            text="Нажмите на атаку, чтобы редактировать"
+            location="top"
+            :disabled="width <= 760"
           >
-            <strong class="attack-row__name">{{ attack.name }}</strong>
-            <span class="attack-row__bonus">{{ formatBonus(attack.attackBonus) }}</span>
-            <span class="attack-row__damage">{{ attack.damage }}</span>
-          </article>
+            <template #activator="{ props }">
+              <div v-bind="props">
+                <article
+                  v-for="attack in attacks"
+                  :key="attack.id"
+                  class="attack-row"
+                  role="button"
+                  tabindex="0"
+                  :aria-label="`Редактировать атаку ${attack.name}`"
+                  @click="openEditDialog(attack)"
+                >
+                  <strong class="attack-row__name">{{ attack.name }}</strong>
+                  <span class="attack-row__bonus">{{ formatBonus(attack.attackBonus) }}</span>
+                  <span class="attack-row__damage">{{ attack.damage }}</span>
+                </article>
+              </div>
+            </template>
+          </v-tooltip>
         </div>
 
         <p v-else class="empty-message">Пока нет атак.</p>

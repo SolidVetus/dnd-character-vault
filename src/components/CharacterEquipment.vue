@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { useDisplay } from 'vuetify'
 import type { Character, EquipmentItem } from '@/types/character'
 import { deleteEquipmentItem, type CharacterCurrency } from '@/api/character/equipment'
 import CharacterEquipmentDialog from './modal/CharacterEquipmentDialog.vue'
@@ -22,6 +23,7 @@ const dialogOpen = ref(false)
 const dialogMode = ref<'currency' | 'item'>('item')
 const activeItemId = ref<string | null>(null)
 const deletingItemId = ref<string | null>(null)
+const { width } = useDisplay()
 
 const activeItem = computed(
   () => items.value.find((item) => item.id === activeItemId.value) ?? null,
@@ -113,12 +115,25 @@ async function handleDeleteItem(itemId: string) {
       <section class="equipment__currency-section" aria-labelledby="currency-title">
         <div class="equipment__section-heading">
           <h3 id="currency-title">Валюта</h3>
-          <button class="equipment__currency-edit" type="button" @click="handleEditCurrency">
-            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-              <path d="M12 20h9" />
-              <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z" />
-            </svg>
-          </button>
+          <v-tooltip
+            :text="`Редактировать колличество валюты`"
+            location="bottom"
+            :disabled="width <= 760"
+          >
+            <template #activator="{ props }">
+              <button
+                v-bind="props"
+                class="equipment__currency-edit"
+                type="button"
+                @click="handleEditCurrency"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M12 20h9" />
+                  <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z" />
+                </svg>
+              </button>
+            </template>
+          </v-tooltip>
         </div>
 
         <div class="equipment__currency">
@@ -144,32 +159,50 @@ async function handleDeleteItem(itemId: string) {
             </span>
 
             <div class="equipment__item-actions">
-              <button
-                class="equipment__icon-button"
-                type="button"
-                :disabled="deletingItemId !== null"
-                :aria-label="`Редактировать предмет ${item.name}`"
-                title="Редактировать"
-                @click="handleEditItem(item)"
+              <v-tooltip
+                :text="`Редактировать предмет: ${item.name}`"
+                location="bottom"
+                :disabled="width <= 760"
               >
-                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                  <path d="M12 20h9" />
-                  <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z" />
-                </svg>
-              </button>
+                <template #activator="{ props }">
+                  <button
+                    v-bind="props"
+                    class="equipment__icon-button"
+                    type="button"
+                    :disabled="deletingItemId !== null"
+                    :aria-label="`Редактировать предмет ${item.name}`"
+                    title="Редактировать"
+                    @click="handleEditItem(item)"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                      <path d="M12 20h9" />
+                      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z" />
+                    </svg>
+                  </button>
+                </template>
+              </v-tooltip>
 
-              <button
-                class="equipment__icon-button"
-                type="button"
-                :disabled="deletingItemId !== null"
-                :aria-label="`Удалить предмет ${item.name}`"
-                title="Удалить"
-                @click="handleDeleteItem(item.id)"
+              <v-tooltip
+                :text="`Удалить предмет: ${item.name}`"
+                location="bottom"
+                :disabled="width <= 760"
               >
-                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                  <path d="M4 7h16M9 7V4h6v3m-9 0 1 13h10l1-13M10 11v5m4-5v5" />
-                </svg>
-              </button>
+                <template #activator="{ props }">
+                  <button
+                    v-bind="props"
+                    class="equipment__icon-button"
+                    type="button"
+                    :disabled="deletingItemId !== null"
+                    :aria-label="`Удалить предмет ${item.name}`"
+                    title="Удалить"
+                    @click="handleDeleteItem(item.id)"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                      <path d="M4 7h16M9 7V4h6v3m-9 0 1 13h10l1-13M10 11v5m4-5v5" />
+                    </svg>
+                  </button>
+                </template>
+              </v-tooltip>
             </div>
           </article>
         </div>
